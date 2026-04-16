@@ -122,6 +122,90 @@ const LESSON_PLAN_SELECT = `
   updated_at
 `;
 
+const LEGACY_LESSON_PLAN_SELECT = `
+  id,
+  author_id,
+  slug,
+  status,
+  moderation_state,
+  title,
+  summary,
+  teaching_objective,
+  duration_minutes,
+  topic_tags,
+  audience_tags,
+  denomination_tags,
+  opening_prayer,
+  icebreaker,
+  facilitator_notes,
+  materials,
+  activities,
+  discussion_questions,
+  prayer_prompts,
+  handout_urls,
+  published_at,
+  created_at,
+  updated_at
+`;
+
+function isMissingAuthorHandleColumnError(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "PGRST204" ||
+    error.message?.includes("author_handle") === true
+  );
+}
+
+function coerceLessonPlanRows(
+  data: LessonPlanRow[] | Array<Omit<LessonPlanRow, "author_handle">> | null,
+  includesAuthorHandle: boolean,
+) {
+  const rows =
+    (data as LessonPlanRow[] | Array<Omit<LessonPlanRow, "author_handle">> | null) ??
+    [];
+
+  if (includesAuthorHandle) {
+    return rows as LessonPlanRow[];
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    author_handle: null,
+  })) as LessonPlanRow[];
+}
+
+async function runLessonPlanQuery(
+  buildQuery: (selectClause: string) => PromiseLike<{
+    data: unknown;
+    error: { code?: string; message?: string } | null;
+  }>,
+) {
+  const current = await buildQuery(LESSON_PLAN_SELECT);
+
+  if (!current.error) {
+    return coerceLessonPlanRows(
+      current.data as LessonPlanRow[] | Array<Omit<LessonPlanRow, "author_handle">> | null,
+      true,
+    );
+  }
+
+  if (!isMissingAuthorHandleColumnError(current.error)) {
+    return [];
+  }
+
+  const legacy = await buildQuery(LEGACY_LESSON_PLAN_SELECT);
+  return coerceLessonPlanRows(
+    legacy.data as LessonPlanRow[] | Array<Omit<LessonPlanRow, "author_handle">> | null,
+    false,
+  );
+}
+
 async function fetchAuthors(client: SupabaseClient, authorIds: string[]) {
   if (authorIds.length === 0) {
     return new Map<string, AuthorRow>();
@@ -266,10 +350,10 @@ async function fetchPublishedPlansRows(filters: LessonPlanFilters = {}) {
     }
   }
 
-  const buildBaseQuery = () => {
+  const buildBaseQuery = (selectClause: string) => {
     let query = supabase
       .from("lesson_plans")
-      .select(LESSON_PLAN_SELECT)
+      .select(selectClause)
       .eq("status", "published");
 
     if (filters.topic) {
@@ -300,32 +384,38 @@ async function fetchPublishedPlansRows(filters: LessonPlanFilters = {}) {
   };
 
   if (!filters.q) {
-    const { data } = await buildBaseQuery().order("published_at", { ascending: false });
-    return (data as LessonPlanRow[] | null) ?? [];
+    return runLessonPlanQuery((selectClause) =>
+      buildBaseQuery(selectClause).order("published_at", { ascending: false }),
+    );
   }
 
-  const handleQuery = normalizeHandleQuery(filters.q);
-  const [{ data: textMatches }, { data: handleMatches }] = await Promise.all([
-    buildBaseQuery()
-      .textSearch("search_tsv", filters.q, {
-        type: "websearch",
-        config: "english",
-      })
-      .order("published_at", { ascending: false }),
+  const textQuery = filters.q;
+  const handleQuery = normalizeHandleQuery(textQuery);
+  const [textMatches, handleMatches] = await Promise.all([
+    runLessonPlanQuery((selectClause) =>
+      buildBaseQuery(selectClause)
+        .textSearch("search_tsv", textQuery, {
+          type: "websearch",
+          config: "english",
+        })
+        .order("published_at", { ascending: false }),
+    ),
     handleQuery
-      ? buildBaseQuery()
-          .ilike("author_handle", `%${handleQuery}%`)
-          .order("published_at", { ascending: false })
-      : Promise.resolve({ data: [] as LessonPlanRow[] }),
+      ? runLessonPlanQuery((selectClause) =>
+          buildBaseQuery(selectClause)
+            .ilike("author_handle", `%${handleQuery}%`)
+            .order("published_at", { ascending: false }),
+        )
+      : Promise.resolve([] as LessonPlanRow[]),
   ]);
 
   const merged = new Map<string, LessonPlanRow>();
 
-  for (const row of (handleMatches as LessonPlanRow[] | null) ?? []) {
+  for (const row of handleMatches) {
     merged.set(row.id, row);
   }
 
-  for (const row of (textMatches as LessonPlanRow[] | null) ?? []) {
+  for (const row of textMatches) {
     if (!merged.has(row.id)) {
       merged.set(row.id, row);
     }
@@ -345,14 +435,16 @@ const getFeaturedPlansCached = unstable_cache(async () => {
     return [];
   }
 
-  const { data } = await supabase
-    .from("lesson_plans")
-    .select(LESSON_PLAN_SELECT)
-    .eq("status", "published")
-    .order("published_at", { ascending: false })
-    .limit(2);
+  const data = await runLessonPlanQuery((selectClause) =>
+    supabase
+      .from("lesson_plans")
+      .select(selectClause)
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(2),
+  );
 
-  return hydrateLessonPlans(supabase, (data as LessonPlanRow[] | null) ?? [], {
+  return hydrateLessonPlans(supabase, data, {
     includeAuthorNames: false,
     authorFallback: "Bible Study Buddy contributor",
   });
@@ -392,14 +484,16 @@ const getLessonPlanBySlugCached = unstable_cache(
       return null;
     }
 
-    const { data } = await supabase
-      .from("lesson_plans")
-      .select(LESSON_PLAN_SELECT)
-      .eq("status", "published")
-      .eq("slug", slug)
-      .maybeSingle();
+    const rows = await runLessonPlanQuery((selectClause) =>
+      supabase
+        .from("lesson_plans")
+        .select(selectClause)
+        .eq("status", "published")
+        .eq("slug", slug)
+        .limit(1),
+    );
 
-    const row = data as LessonPlanRow | null;
+    const row = rows[0] ?? null;
 
     if (!row) {
       return null;
@@ -486,13 +580,11 @@ export async function getLessonPlanById(id: string) {
     return null;
   }
 
-  const { data } = await supabase
-    .from("lesson_plans")
-    .select(LESSON_PLAN_SELECT)
-    .eq("id", id)
-    .maybeSingle();
+  const rows = await runLessonPlanQuery((selectClause) =>
+    supabase.from("lesson_plans").select(selectClause).eq("id", id).limit(1),
+  );
 
-  const row = data as LessonPlanRow | null;
+  const row = rows[0] ?? null;
 
   if (!row) {
     return null;
@@ -510,17 +602,16 @@ export async function getDashboardPlans() {
     return [];
   }
 
-  let query = supabase
-    .from("lesson_plans")
-    .select(LESSON_PLAN_SELECT)
-    .order("updated_at", { ascending: false });
+  const data = await runLessonPlanQuery((selectClause) => {
+    let query = supabase.from("lesson_plans").select(selectClause);
 
-  if (viewer.role !== "admin") {
-    query = query.eq("author_id", viewer.userId);
-  }
+    if (viewer.role !== "admin") {
+      query = query.eq("author_id", viewer.userId);
+    }
 
-  const { data } = await query;
-  return hydrateLessonPlans(supabase, (data as LessonPlanRow[] | null) ?? []);
+    return query.order("updated_at", { ascending: false });
+  });
+  return hydrateLessonPlans(supabase, data);
 }
 
 export async function getSavedPlans() {
@@ -545,14 +636,13 @@ export async function getSavedPlans() {
     return [];
   }
 
-  const { data } = await supabase
-    .from("lesson_plans")
-    .select(LESSON_PLAN_SELECT)
-    .in("id", lessonPlanIds);
+  const data = await runLessonPlanQuery((selectClause) =>
+    supabase.from("lesson_plans").select(selectClause).in("id", lessonPlanIds),
+  );
 
   const plans = await hydrateLessonPlans(
     supabase,
-    (data as LessonPlanRow[] | null) ?? [],
+    data,
   );
   const order = new Map(lessonPlanIds.map((id, index) => [id, index]));
 

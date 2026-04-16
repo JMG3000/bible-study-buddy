@@ -20,6 +20,20 @@ function buildDashboardRedirect(key: string, message: string) {
   return appendMessage("/dashboard", key, message);
 }
 
+function isMissingAuthorHandleColumnError(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "PGRST204" ||
+    error.message?.includes("author_handle") === true
+  );
+}
+
 export async function updateHandleAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
 
@@ -77,10 +91,14 @@ export async function updateHandleAction(formData: FormData) {
     .eq("author_id", user.id);
 
   if (planError) {
+    const message = isMissingAuthorHandleColumnError(planError)
+      ? "Run the 0005_add_lesson_plan_author_handles.sql migration in Supabase, then save your handle again."
+      : planError.message ?? "Your handle changed, but your lessons did not sync yet.";
+
     redirect(
       buildDashboardRedirect(
         "handleError",
-        planError.message ?? "Your handle changed, but your lessons did not sync yet.",
+        message,
       ),
     );
   }
