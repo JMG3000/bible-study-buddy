@@ -1,18 +1,48 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { bibleBooks } from "@/lib/bible-books";
+import { getCurrentViewer } from "@/lib/lesson-plans";
 import {
   audienceOptions,
   denominationOptions,
   topicOptions,
 } from "@/lib/site";
+import { createLessonDraftAction } from "./actions";
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export const metadata: Metadata = {
   title: "Create a Lesson",
   description:
-    "Structured editor scaffold for drafting Bible study lessons with normalized scripture references.",
+    "Create a draft Bible study lesson with structured scripture references and creator-only access.",
 };
 
-export default function CreatePage() {
+export const dynamic = "force-dynamic";
+
+function readValue(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string,
+) {
+  const value = searchParams[key];
+  return Array.isArray(value) ? value[0] : value ?? "";
+}
+
+export default async function CreatePage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const [viewer, resolvedParams] = await Promise.all([
+    getCurrentViewer(),
+    searchParams,
+  ]);
+  const error = readValue(resolvedParams, "error");
+
+  if (!viewer) {
+    redirect("/login?next=/create");
+  }
+
   return (
     <section className="section">
       <div className="shell stack">
@@ -20,26 +50,33 @@ export default function CreatePage() {
           <span className="eyebrow">Authoring surface</span>
           <h1 className="page-title">Structured lesson editor</h1>
           <p className="lead">
-            This page is scaffolded to match the production lesson schema. Once
-            Supabase auth and server actions are connected, these fields become
-            the live draft and publish workflow.
+            Signed-in creators can now draft new lesson plans directly against
+            the live Supabase schema. This form creates a draft and stores one
+            normalized scripture range with it.
           </p>
         </div>
 
-        <div className="helper-banner">
-          The current form is intentionally read-only. The live read layer is in
-          place; the next implementation step is wiring authenticated mutations.
+        <div className="subtle-panel">
+          Signed in as <strong>{viewer.displayName}</strong>. Drafts save to your
+          creator account and appear in the dashboard immediately after submit.
         </div>
 
-        <div className="editor-grid">
-          <section className="editor-card">
+        {error ? (
+          <div className="helper-banner" role="alert">
+            {error}
+          </div>
+        ) : null}
+
+        <form action={createLessonDraftAction} className="editor-grid">
+          <section className="editor-card stack">
             <div className="field">
               <label htmlFor="title">Lesson title</label>
               <input
                 id="title"
+                name="title"
                 className="input"
-                defaultValue="A new Bible study lesson"
-                readOnly
+                placeholder="Walking in Community"
+                required
               />
             </div>
 
@@ -47,40 +84,76 @@ export default function CreatePage() {
               <label htmlFor="summary">Summary</label>
               <textarea
                 id="summary"
+                name="summary"
                 className="textarea"
-                defaultValue="A concise overview that will appear in the public catalog and SEO metadata."
-                readOnly
+                placeholder="A concise overview that will appear in the public catalog and SEO metadata."
+                required
               />
             </div>
 
             <div className="field">
-              <label htmlFor="objective">Teaching objective</label>
+              <label htmlFor="teachingObjective">Teaching objective</label>
               <textarea
-                id="objective"
+                id="teachingObjective"
+                name="teachingObjective"
                 className="textarea"
-                defaultValue="Describe the change, understanding, or response this lesson is designed to produce."
-                readOnly
+                placeholder="Describe the change, understanding, or response this lesson is designed to produce."
+                required
               />
             </div>
 
             <div className="field-row">
               <div className="field">
-                <label htmlFor="duration">Duration</label>
-                <input id="duration" className="input" defaultValue="45" readOnly />
+                <label htmlFor="durationMinutes">Duration</label>
+                <input
+                  id="durationMinutes"
+                  name="durationMinutes"
+                  type="number"
+                  min="5"
+                  max="480"
+                  className="input"
+                  defaultValue="45"
+                  required
+                />
               </div>
               <div className="field">
-                <label htmlFor="status">Status</label>
-                <input id="status" className="input" defaultValue="draft" readOnly />
+                <label htmlFor="openingPrayer">Opening prayer</label>
+                <input
+                  id="openingPrayer"
+                  name="openingPrayer"
+                  className="input"
+                  placeholder="Optional opening prayer"
+                />
               </div>
+            </div>
+
+            <div className="field">
+              <label htmlFor="icebreaker">Icebreaker</label>
+              <textarea
+                id="icebreaker"
+                name="icebreaker"
+                className="textarea"
+                placeholder="Optional discussion starter or warm-up prompt"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="facilitatorNotes">Facilitator notes</label>
+              <textarea
+                id="facilitatorNotes"
+                name="facilitatorNotes"
+                className="textarea"
+                placeholder="Teaching notes, timing cues, or pastoral reminders"
+              />
             </div>
           </section>
 
-          <section className="editor-card">
+          <section className="editor-card stack">
             <h2 className="section-title">Scripture selector</h2>
             <div className="field-row">
               <div className="field">
                 <label htmlFor="book">Book</label>
-                <select id="book" className="select" defaultValue="acts" disabled>
+                <select id="book" name="book" className="select" defaultValue="acts">
                   {bibleBooks.map((book) => (
                     <option key={book.slug} value={book.slug}>
                       {book.displayName}
@@ -89,63 +162,155 @@ export default function CreatePage() {
                 </select>
               </div>
               <div className="field">
-                <label htmlFor="chapter-start">Chapter start</label>
-                <input id="chapter-start" className="input" defaultValue="2" readOnly />
+                <label htmlFor="chapterStart">Chapter start</label>
+                <input
+                  id="chapterStart"
+                  name="chapterStart"
+                  type="number"
+                  min="1"
+                  className="input"
+                  defaultValue="2"
+                  required
+                />
               </div>
               <div className="field">
-                <label htmlFor="verse-start">Verse start</label>
-                <input id="verse-start" className="input" defaultValue="42" readOnly />
+                <label htmlFor="verseStart">Verse start</label>
+                <input
+                  id="verseStart"
+                  name="verseStart"
+                  type="number"
+                  min="1"
+                  className="input"
+                  defaultValue="42"
+                  required
+                />
               </div>
               <div className="field">
-                <label htmlFor="chapter-end">Chapter end</label>
-                <input id="chapter-end" className="input" defaultValue="2" readOnly />
+                <label htmlFor="chapterEnd">Chapter end</label>
+                <input
+                  id="chapterEnd"
+                  name="chapterEnd"
+                  type="number"
+                  min="1"
+                  className="input"
+                  defaultValue="2"
+                  required
+                />
               </div>
               <div className="field">
-                <label htmlFor="verse-end">Verse end</label>
-                <input id="verse-end" className="input" defaultValue="47" readOnly />
+                <label htmlFor="verseEnd">Verse end</label>
+                <input
+                  id="verseEnd"
+                  name="verseEnd"
+                  type="number"
+                  min="1"
+                  className="input"
+                  defaultValue="47"
+                  required
+                />
               </div>
             </div>
 
             <div className="subtle-panel">
-              The production write path will turn these numeric values into
-              relational scripture ranges and generated display labels instead
-              of storing free-text references.
+              The saved draft stores numeric scripture boundaries in
+              <span className="code-inline"> scripture_refs </span>
+              instead of free-text references.
+            </div>
+
+            <div className="field">
+              <label htmlFor="discussionQuestions">Discussion questions</label>
+              <textarea
+                id="discussionQuestions"
+                name="discussionQuestions"
+                className="textarea"
+                placeholder="One item per line"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="activities">Activities and next steps</label>
+              <textarea
+                id="activities"
+                name="activities"
+                className="textarea"
+                placeholder="One item per line"
+              />
             </div>
           </section>
 
-          <section className="editor-card">
+          <section className="editor-card stack">
+            <h2 className="section-title">Classification and session prep</h2>
+
             <div className="field">
               <label>Topic tags</label>
-              <div className="tag-list">
+              <div className="choice-grid">
                 {topicOptions.map((topic) => (
-                  <span key={topic} className="chip-muted">
-                    {topic}
-                  </span>
+                  <label key={topic} className="choice-pill">
+                    <input type="checkbox" name="topicTags" value={topic} />
+                    <span>{topic}</span>
+                  </label>
                 ))}
               </div>
             </div>
+
             <div className="field">
               <label>Audience tags</label>
-              <div className="tag-list">
+              <div className="choice-grid">
                 {audienceOptions.map((audience) => (
-                  <span key={audience} className="chip-muted">
-                    {audience}
-                  </span>
+                  <label key={audience} className="choice-pill">
+                    <input type="checkbox" name="audienceTags" value={audience} />
+                    <span>{audience}</span>
+                  </label>
                 ))}
               </div>
             </div>
+
             <div className="field">
               <label>Denomination tags</label>
-              <div className="tag-list">
+              <div className="choice-grid">
                 {denominationOptions.map((denomination) => (
-                  <span key={denomination} className="chip-muted">
-                    {denomination}
-                  </span>
+                  <label key={denomination} className="choice-pill">
+                    <input
+                      type="checkbox"
+                      name="denominationTags"
+                      value={denomination}
+                    />
+                    <span>{denomination}</span>
+                  </label>
                 ))}
               </div>
             </div>
+
+            <div className="field">
+              <label htmlFor="materials">Materials</label>
+              <textarea
+                id="materials"
+                name="materials"
+                className="textarea"
+                placeholder="One item per line"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="prayerPrompts">Prayer prompts</label>
+              <textarea
+                id="prayerPrompts"
+                name="prayerPrompts"
+                className="textarea"
+                placeholder="One item per line"
+              />
+            </div>
+
+            <div className="inline-actions">
+              <button type="submit" className="button">
+                Save draft
+              </button>
+              <Link href="/dashboard" className="button-secondary">
+                Back to dashboard
+              </Link>
+            </div>
           </section>
-        </div>
+        </form>
       </div>
     </section>
   );

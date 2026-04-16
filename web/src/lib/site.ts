@@ -1,11 +1,16 @@
+function normalizeUrl(url: string) {
+  return url.replace(/\/+$/, "");
+}
+
 export const siteConfig = {
   name: "Bible Study Buddy: Free",
   shortName: "Bible Study Buddy: Free",
   description:
     "Create, share, and browse free Bible study lesson plans for small groups, classrooms, and church gatherings.",
-  url:
+  url: normalizeUrl(
     process.env.NEXT_PUBLIC_SITE_URL ??
-    "https://bible-study-buddy-free.example.com",
+      "https://bible-study-buddy-free.example.com",
+  ),
 };
 
 export const topicOptions = [

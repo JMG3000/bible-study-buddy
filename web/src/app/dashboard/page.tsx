@@ -4,6 +4,9 @@ import { EmptyState } from "@/components/empty-state";
 import { PlanCard } from "@/components/plan-card";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getCurrentViewer, getDashboardPlans } from "@/lib/lesson-plans";
+import { signOutAction } from "@/app/login/actions";
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export const metadata: Metadata = {
   title: "Creator Dashboard",
@@ -13,12 +16,26 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
-  const [viewer, plans] = await Promise.all([
+function readValue(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string,
+) {
+  const value = searchParams[key];
+  return Array.isArray(value) ? value[0] : value ?? "";
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const [viewer, plans, resolvedParams] = await Promise.all([
     getCurrentViewer(),
     getDashboardPlans(),
+    searchParams,
   ]);
   const supabaseReady = isSupabaseConfigured();
+  const created = readValue(resolvedParams, "created") === "1";
 
   return (
     <section className="section">
@@ -33,15 +50,30 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <Link href="/create" className="button">
-            New draft
-          </Link>
+          <div className="inline-actions">
+            <Link href="/create" className="button">
+              New draft
+            </Link>
+            {viewer ? (
+              <form action={signOutAction}>
+                <button type="submit" className="button-secondary">
+                  Sign out
+                </button>
+              </form>
+            ) : null}
+          </div>
         </div>
 
         {!supabaseReady ? (
           <div className="helper-banner">
             Configure Supabase first, then connect auth to make this dashboard
             live.
+          </div>
+        ) : null}
+
+        {created ? (
+          <div className="helper-banner">
+            Draft created successfully. You can now find it in your dashboard list.
           </div>
         ) : null}
 

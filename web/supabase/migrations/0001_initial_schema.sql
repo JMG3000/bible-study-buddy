@@ -15,6 +15,7 @@ create type public.report_reason as enum (
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = public, pg_temp
 as $$
 begin
   new.updated_at = timezone('utc', now());
@@ -25,6 +26,7 @@ $$;
 create or replace function public.set_first_published_at()
 returns trigger
 language plpgsql
+set search_path = public, pg_temp
 as $$
 begin
   if new.status = 'published' and old.published_at is null then
@@ -42,6 +44,7 @@ $$;
 create or replace function public.lock_slug_after_publish()
 returns trigger
 language plpgsql
+set search_path = public, pg_temp
 as $$
 begin
   if old.published_at is not null and new.slug is distinct from old.slug then
@@ -51,6 +54,41 @@ begin
   return new;
 end;
 $$;
+
+create or replace function public.lesson_plans_search_tsv()
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $$
+begin
+  new.search_tsv :=
+    setweight(to_tsvector('english', coalesce(new.title, '')), 'A') ||
+    setweight(to_tsvector('english', coalesce(new.summary, '')), 'A') ||
+    setweight(to_tsvector('english', coalesce(new.teaching_objective, '')), 'A') ||
+    setweight(to_tsvector('english', coalesce(new.opening_prayer, '')), 'C') ||
+    setweight(to_tsvector('english', coalesce(new.icebreaker, '')), 'B') ||
+    setweight(to_tsvector('english', coalesce(new.facilitator_notes, '')), 'C') ||
+    setweight(to_tsvector('english', array_to_string(new.topic_tags, ' ')), 'A') ||
+    setweight(to_tsvector('english', array_to_string(new.audience_tags, ' ')), 'B') ||
+    setweight(to_tsvector('english', array_to_string(new.denomination_tags, ' ')), 'B') ||
+    setweight(to_tsvector('english', array_to_string(new.materials, ' ')), 'C') ||
+    setweight(to_tsvector('english', array_to_string(new.activities, ' ')), 'B') ||
+    setweight(to_tsvector('english', array_to_string(new.discussion_questions, ' ')), 'B') ||
+    setweight(to_tsvector('english', array_to_string(new.prayer_prompts, ' ')), 'C');
+
+  return new;
+end;
+$$;
+
+create table public.profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null,
+  avatar_url text,
+  bio text,
+  role public.user_role not null default 'creator',
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
 
 create or replace function public.current_profile_role()
 returns public.user_role
@@ -97,16 +135,6 @@ begin
 end;
 $$;
 
-create table public.profiles (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  display_name text not null,
-  avatar_url text,
-  bio text,
-  role public.user_role not null default 'creator',
-  created_at timestamptz not null default timezone('utc', now()),
-  updated_at timestamptz not null default timezone('utc', now())
-);
-
 create table public.bible_books (
   book_code smallint primary key,
   sort_order smallint not null unique,
@@ -141,21 +169,7 @@ create table public.lesson_plans (
   published_at timestamptz,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now()),
-  search_tsv tsvector generated always as (
-    setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(summary, '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(teaching_objective, '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(opening_prayer, '')), 'C') ||
-    setweight(to_tsvector('english', coalesce(icebreaker, '')), 'B') ||
-    setweight(to_tsvector('english', coalesce(facilitator_notes, '')), 'C') ||
-    setweight(to_tsvector('english', array_to_string(topic_tags, ' ')), 'A') ||
-    setweight(to_tsvector('english', array_to_string(audience_tags, ' ')), 'B') ||
-    setweight(to_tsvector('english', array_to_string(denomination_tags, ' ')), 'B') ||
-    setweight(to_tsvector('english', array_to_string(materials, ' ')), 'C') ||
-    setweight(to_tsvector('english', array_to_string(activities, ' ')), 'B') ||
-    setweight(to_tsvector('english', array_to_string(discussion_questions, ' ')), 'B') ||
-    setweight(to_tsvector('english', array_to_string(prayer_prompts, ' ')), 'C')
-  ) stored,
+  search_tsv tsvector not null default ''::tsvector,
   check ((status <> 'published') or slug is not null)
 );
 
@@ -177,13 +191,6 @@ create table public.scripture_refs (
     book_code::bigint * 1000000 +
     chapter_end::bigint * 1000 +
     verse_end::bigint
-  ) stored,
-  sort_range int8range generated always as (
-    int8range(
-      book_code::bigint * 1000000 + chapter_start::bigint * 1000 + verse_start::bigint,
-      book_code::bigint * 1000000 + chapter_end::bigint * 1000 + verse_end::bigint,
-      '[]'
-    )
   ) stored,
   display_label text not null,
   created_at timestamptz not null default timezone('utc', now()),
@@ -215,7 +222,8 @@ create table public.reports (
   unique (lesson_plan_id, reporter_id)
 );
 
-create view public.public_creator_profiles as
+create view public.public_creator_profiles
+with (security_invoker = true) as
 select
   user_id,
   display_name,
@@ -250,9 +258,6 @@ create index scripture_refs_plan_sequence_idx
 create index scripture_refs_book_sort_idx
   on public.scripture_refs (book_code, sort_start, sort_end);
 
-create index scripture_refs_sort_range_gist
-  on public.scripture_refs using gist (sort_range);
-
 create index reports_status_created_idx
   on public.reports (status, created_at desc);
 
@@ -271,6 +276,10 @@ for each row execute function public.set_first_published_at();
 create trigger lesson_plans_lock_slug_after_publish
 before update on public.lesson_plans
 for each row execute function public.lock_slug_after_publish();
+
+create trigger lesson_plans_search_tsv_update
+before insert or update on public.lesson_plans
+for each row execute function public.lesson_plans_search_tsv();
 
 create trigger on_auth_user_created
 after insert on auth.users

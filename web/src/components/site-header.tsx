@@ -5,6 +5,7 @@ const navLinks = [
   { href: "/create", label: "Create" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/admin/reports", label: "Moderation" },
+  { href: "/login", label: "Sign In" },
 ];
 
 export function SiteHeader() {

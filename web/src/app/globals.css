@@ -332,6 +332,12 @@ img {
   padding: 2rem 0;
 }
 
+.auth-shell {
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 14rem);
+}
+
 .section-head {
   display: flex;
   align-items: end;
@@ -344,13 +350,18 @@ img {
 .editor-card,
 .empty-state,
 .callout-card,
-.report-card {
+.report-card,
+.auth-card {
   padding: 1.35rem;
 }
 
 .surface-card {
   display: grid;
   gap: 0.95rem;
+}
+
+.auth-card {
+  width: min(100%, 560px);
 }
 
 .card-grid {
@@ -468,6 +479,32 @@ img {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.choice-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.choice-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.72rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.56);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.choice-pill input {
+  accent-color: var(--brand);
+}
+
+.auth-button {
+  width: 100%;
 }
 
 .results-stack,
