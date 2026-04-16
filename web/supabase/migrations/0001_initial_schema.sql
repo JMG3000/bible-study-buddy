@@ -222,14 +222,6 @@ create table public.reports (
   unique (lesson_plan_id, reporter_id)
 );
 
-create view public.public_creator_profiles
-with (security_invoker = true) as
-select
-  user_id,
-  display_name,
-  avatar_url
-from public.profiles;
-
 create unique index lesson_plans_slug_uq
   on public.lesson_plans (slug)
   where slug is not null;
@@ -519,5 +511,3 @@ on public.reports
 for update
 using (public.is_admin())
 with check (public.is_admin());
-
-grant select on public.public_creator_profiles to anon, authenticated;

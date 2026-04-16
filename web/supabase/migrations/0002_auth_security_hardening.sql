@@ -66,12 +66,4 @@ begin
 end;
 $$;
 
-create or replace view public.public_creator_profiles
-with (security_invoker = true) as
-select
-  user_id,
-  display_name,
-  avatar_url
-from public.profiles;
-
-grant select on public.public_creator_profiles to anon, authenticated;
+drop view if exists public.public_creator_profiles;

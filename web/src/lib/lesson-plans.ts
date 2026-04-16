@@ -113,7 +113,7 @@ async function fetchAuthors(client: SupabaseClient, authorIds: string[]) {
   }
 
   const { data } = await client
-    .from("public_creator_profiles")
+    .from("profiles")
     .select("user_id, display_name, avatar_url")
     .in("user_id", authorIds);
 
@@ -146,11 +146,22 @@ async function fetchScriptures(client: SupabaseClient, planIds: string[]) {
   return grouped;
 }
 
-async function hydrateLessonPlans(client: SupabaseClient, rows: LessonPlanRow[]) {
+async function hydrateLessonPlans(
+  client: SupabaseClient,
+  rows: LessonPlanRow[],
+  options: {
+    includeAuthorNames?: boolean;
+    authorFallback?: string;
+  } = {},
+) {
   const planIds = rows.map((row) => row.id);
   const authorIds = [...new Set(rows.map((row) => row.author_id))];
+  const includeAuthorNames = options.includeAuthorNames ?? true;
+  const authorFallback = options.authorFallback ?? "Unknown Author";
   const [authors, scriptures] = await Promise.all([
-    fetchAuthors(client, authorIds),
+    includeAuthorNames
+      ? fetchAuthors(client, authorIds)
+      : Promise.resolve(new Map<string, AuthorRow>()),
     fetchScriptures(client, planIds),
   ]);
 
@@ -174,12 +185,12 @@ async function hydrateLessonPlans(client: SupabaseClient, rows: LessonPlanRow[])
       };
     });
 
-    return {
-      id: row.id,
-      slug: row.slug,
-      authorId: row.author_id,
-      authorName: author?.display_name ?? "Unknown Author",
-      authorRole: "creator",
+      return {
+        id: row.id,
+        slug: row.slug,
+        authorId: row.author_id,
+        authorName: author?.display_name ?? authorFallback,
+        authorRole: "creator",
       status: row.status,
       moderationState: row.moderation_state,
       title: row.title,
@@ -289,7 +300,10 @@ const getFeaturedPlansCached = unstable_cache(async () => {
     .order("published_at", { ascending: false })
     .limit(2);
 
-  return hydrateLessonPlans(supabase, (data as LessonPlanRow[] | null) ?? []);
+  return hydrateLessonPlans(supabase, (data as LessonPlanRow[] | null) ?? [], {
+    includeAuthorNames: false,
+    authorFallback: "Bible Study Buddy contributor",
+  });
 }, ["featured-plans"], { tags: [HOME_TAG, PLAN_LIST_TAG] });
 
 export async function getFeaturedPlans() {
@@ -305,7 +319,10 @@ const getPublishedPlansCached = unstable_cache(
     }
 
     const rows = await fetchPublishedPlansRows(filters);
-    return hydrateLessonPlans(supabase, rows);
+    return hydrateLessonPlans(supabase, rows, {
+      includeAuthorNames: false,
+      authorFallback: "Bible Study Buddy contributor",
+    });
   },
   ["published-plans"],
   { tags: [PLAN_LIST_TAG] },
@@ -336,7 +353,10 @@ const getLessonPlanBySlugCached = unstable_cache(
       return null;
     }
 
-    const [plan] = await hydrateLessonPlans(supabase, [row]);
+    const [plan] = await hydrateLessonPlans(supabase, [row], {
+      includeAuthorNames: false,
+      authorFallback: "Bible Study Buddy contributor",
+    });
     return plan ?? null;
   },
   ["lesson-plan-by-slug"],
