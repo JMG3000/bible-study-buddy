@@ -57,11 +57,13 @@ interface ScriptureRow {
 interface AuthorRow {
   user_id: string;
   display_name: string;
+  handle: string;
   avatar_url: string | null;
 }
 
 interface ProfileRow {
   display_name: string;
+  handle: string;
   role: UserRole;
 }
 
@@ -78,6 +80,7 @@ interface ReportRow {
 export interface ViewerContext {
   userId: string;
   displayName: string;
+  handle: string;
   role: UserRole;
 }
 
@@ -114,7 +117,7 @@ async function fetchAuthors(client: SupabaseClient, authorIds: string[]) {
 
   const { data } = await client
     .from("profiles")
-    .select("user_id, display_name, avatar_url")
+    .select("user_id, display_name, handle, avatar_url")
     .in("user_id", authorIds);
 
   return new Map<string, AuthorRow>(
@@ -406,7 +409,7 @@ export async function getCurrentViewer() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, role")
+    .select("display_name, handle, role")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -419,6 +422,10 @@ export async function getCurrentViewer() {
       user.user_metadata.display_name ??
       user.email ??
       "Creator",
+    handle:
+      typedProfile?.handle ??
+      String(user.email ?? "friend").split("@")[0] ??
+      "friend",
     role: typedProfile?.role ?? "creator",
   } satisfies ViewerContext;
 }

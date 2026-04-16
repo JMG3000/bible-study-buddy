@@ -83,12 +83,73 @@ $$;
 create table public.profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
+  handle text not null,
   avatar_url text,
   bio text,
   role public.user_role not null default 'creator',
   created_at timestamptz not null default timezone('utc', now()),
-  updated_at timestamptz not null default timezone('utc', now())
+  updated_at timestamptz not null default timezone('utc', now()),
+  constraint profiles_handle_format check (
+    handle ~ '^[a-z0-9](?:[a-z0-9-]{0,28}[a-z0-9])?$'
+  )
 );
+
+create unique index profiles_handle_lower_uq on public.profiles (lower(handle));
+
+create or replace function public.normalize_profile_handle(source text)
+returns text
+language sql
+immutable
+set search_path = public, pg_temp
+as $$
+  select trim(both '-' from regexp_replace(lower(coalesce(source, '')), '[^a-z0-9]+', '-', 'g'))
+$$;
+
+create or replace function public.resolve_profile_handle(
+  source text,
+  existing_user_id uuid default null
+)
+returns text
+language plpgsql
+set search_path = public, pg_temp
+as $$
+declare
+  normalized text;
+  base_handle text;
+  candidate text;
+  suffix integer := 1;
+begin
+  normalized := public.normalize_profile_handle(source);
+
+  if normalized = '' then
+    normalized := 'friend';
+  end if;
+
+  base_handle := left(normalized, 30);
+
+  if base_handle = '' then
+    base_handle := 'friend';
+  end if;
+
+  candidate := base_handle;
+
+  while exists (
+    select 1
+    from public.profiles p
+    where lower(p.handle) = lower(candidate)
+      and (existing_user_id is null or p.user_id <> existing_user_id)
+  ) loop
+    suffix := suffix + 1;
+    candidate := concat(
+      trim(trailing '-' from left(base_handle, greatest(1, 30 - length(suffix::text) - 1))),
+      '-',
+      suffix::text
+    );
+  end loop;
+
+  return candidate;
+end;
+$$;
 
 create or replace function public.current_profile_role()
 returns public.user_role
@@ -120,15 +181,29 @@ set search_path = public
 as $$
 declare
   fallback_name text;
+  fallback_handle text;
 begin
   fallback_name := coalesce(
     new.raw_user_meta_data ->> 'display_name',
+    new.raw_user_meta_data ->> 'full_name',
     split_part(coalesce(new.email, 'creator'), '@', 1),
     'New Creator'
   );
 
-  insert into public.profiles (user_id, display_name)
-  values (new.id, fallback_name)
+  fallback_handle := public.resolve_profile_handle(
+    coalesce(
+      new.raw_user_meta_data ->> 'preferred_username',
+      new.raw_user_meta_data ->> 'user_name',
+      new.raw_user_meta_data ->> 'display_name',
+      new.raw_user_meta_data ->> 'full_name',
+      split_part(coalesce(new.email, 'friend'), '@', 1),
+      'friend'
+    ),
+    new.id
+  );
+
+  insert into public.profiles (user_id, display_name, handle)
+  values (new.id, fallback_name, fallback_handle)
   on conflict (user_id) do nothing;
 
   return new;

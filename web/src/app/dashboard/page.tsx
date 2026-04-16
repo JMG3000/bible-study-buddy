@@ -48,6 +48,11 @@ export default async function DashboardPage({
               Your draft, published, and unpublished lesson plans load from
               Supabase once authentication is connected.
             </p>
+            {viewer ? (
+              <p className="body-copy">
+                Signed in as {viewer.displayName} with the handle @{viewer.handle}.
+              </p>
+            ) : null}
           </div>
 
           <div className="inline-actions">
