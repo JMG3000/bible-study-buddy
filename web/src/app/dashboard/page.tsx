@@ -51,6 +51,12 @@ export default async function DashboardPage({
           </div>
 
           <div className="inline-actions">
+            <Link href="/" className="button-tertiary">
+              Home
+            </Link>
+            <Link href="/plans" className="button-tertiary">
+              Browse plans
+            </Link>
             <Link href="/create" className="button">
               New draft
             </Link>

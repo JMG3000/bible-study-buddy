@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getCurrentViewer, getLessonPlanById } from "@/lib/lesson-plans";
+import { publishLessonAction } from "./actions";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export const dynamic = "force-dynamic";
@@ -20,27 +23,55 @@ export async function generateMetadata({
   };
 }
 
-export default async function DashboardPlanPage({ params }: PageProps) {
+export default async function DashboardPlanPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
   const [viewer, plan] = await Promise.all([
     getCurrentViewer(),
     getLessonPlanById(id),
   ]);
+  const published = resolvedSearchParams.published;
+  const error = resolvedSearchParams.error;
 
   if (!plan) {
     notFound();
   }
 
+  if (!viewer || (viewer.role !== "admin" && viewer.userId !== plan.authorId)) {
+    notFound();
+  }
+
+  const publishedSlug = Array.isArray(published) ? published[0] : published;
+  const errorMessage = Array.isArray(error) ? error[0] : error;
+  const publicHref = plan.slug ? `/plans/${plan.slug}` : null;
+
   return (
     <section className="section">
       <div className="shell stack">
-        <div className="stack-sm">
-          <span className="eyebrow">Editor detail</span>
-          <h1 className="page-title">{plan.title}</h1>
-          <p className="lead">
-            This route now loads its lesson data from Supabase and is intended
-            for authenticated owner-only editing.
-          </p>
+        <div className="section-head">
+          <div className="stack-sm">
+            <span className="eyebrow">Creator review</span>
+            <h1 className="page-title">{plan.title}</h1>
+            <p className="lead">
+              Review your lesson, publish it to the public catalog, and keep one
+              clear path back to the rest of the site.
+            </p>
+          </div>
+
+          <div className="inline-actions">
+            <Link href="/" className="button-tertiary">
+              Home
+            </Link>
+            <Link href="/plans" className="button-tertiary">
+              Browse plans
+            </Link>
+            <Link href="/dashboard" className="button-secondary">
+              Back to dashboard
+            </Link>
+          </div>
         </div>
 
         {!isSupabaseConfigured() ? (
@@ -49,14 +80,24 @@ export default async function DashboardPlanPage({ params }: PageProps) {
           </div>
         ) : null}
 
-        {!viewer ? (
+        {publishedSlug ? (
           <div className="helper-banner">
-            Sign in to edit this lesson with owner-scoped permissions.
+            Lesson published successfully. It is now available at{" "}
+            <Link href={`/plans/${publishedSlug}`} className="inline-link">
+              /plans/{publishedSlug}
+            </Link>
+            .
+          </div>
+        ) : null}
+
+        {errorMessage ? (
+          <div className="helper-banner" role="alert">
+            {errorMessage}
           </div>
         ) : null}
 
         <div className="editor-grid">
-          <section className="editor-card">
+          <section className="editor-card stack">
             <div className="meta-row">
               <span className={`status-pill ${plan.status}`}>{plan.status}</span>
               <span>{plan.durationMinutes} minutes</span>
@@ -87,9 +128,26 @@ export default async function DashboardPlanPage({ params }: PageProps) {
                 readOnly
               />
             </div>
+
+            <div className="inline-actions">
+              {plan.status !== "published" ? (
+                <form action={publishLessonAction}>
+                  <input type="hidden" name="id" value={plan.id} />
+                  <button type="submit" className="button">
+                    Publish lesson
+                  </button>
+                </form>
+              ) : null}
+
+              {publicHref ? (
+                <Link href={publicHref} className="button-secondary">
+                  View public lesson
+                </Link>
+              ) : null}
+            </div>
           </section>
 
-          <section className="editor-card">
+          <section className="editor-card stack">
             <h2 className="section-title">Discussion questions</h2>
             <ol className="numbered-list">
               {plan.discussionQuestions.map((question) => (
@@ -100,13 +158,13 @@ export default async function DashboardPlanPage({ params }: PageProps) {
             </ol>
           </section>
 
-          <section className="editor-card">
-            <h2 className="section-title">Operational notes</h2>
+          <section className="editor-card stack">
+            <h2 className="section-title">Next step for this draft</h2>
             <div className="stack-sm">
               <p className="body-copy">
-                The next step is wiring server actions so this editor can save
-                drafts, publish, and update lesson content against the live
-                Supabase schema.
+                This page now gives you a direct publish step. In-place editing,
+                favorites, and reporting are the next product layers we can add
+                after the publish flow is settled.
               </p>
               <div className="tag-list">
                 {plan.topicTags.map((tag) => (

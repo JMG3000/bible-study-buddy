@@ -22,9 +22,9 @@ export default async function HomePage() {
               Create, share, and print Bible study lessons that are ready for the room.
             </h1>
             <p className="lede">
-              Bible Study Buddy: Free gives small-group leaders a structured
-              lesson library with scripture-aware search, stable public pages,
-              and a dashboard for drafting or publishing polished sessions.
+              Bible Study Buddy: Free helps believers prepare thoughtful Bible
+              study gatherings, share lessons with confidence, and keep every
+              session rooted in Scripture.
             </p>
 
             <div className="inline-actions" style={{ marginTop: "1.6rem" }}>
@@ -46,32 +46,31 @@ export default async function HomePage() {
                 <span>Normalized references and printable layouts</span>
               </div>
               <div className="stat-pill">
-                <strong>Next + Supabase</strong>
-                <span>Production-ready route and schema foundation</span>
+                <strong>Share with confidence</strong>
+                <span>Draft lessons now and publish them for others next</span>
               </div>
             </div>
           </div>
 
           <aside className="feature-panel">
             <div className="stack">
-              <span className="chip-accent">What is implemented now</span>
+              <span className="chip-accent">What you can do today</span>
               <h2 className="section-title">
-                The scaffold already mirrors the approved architecture.
+                A simple place to prepare, review, and share Bible studies.
               </h2>
               <div className="stack-sm">
                 <p className="body-copy">
-                  Public catalog routes, print-ready detail pages, admin review
-                  surfaces, Supabase SQL, and webhook revalidation are now
-                  paired with a live Supabase read layer.
+                  Browse public lessons, print what you need for the room, and
+                  start building your own lesson library one draft at a time.
                 </p>
                 <div className="subtle-panel">
                   <div className="stack-sm">
-                    <strong>Included in this baseline</strong>
+                    <strong>Included right now</strong>
                     <div className="tag-list">
-                      <span className="chip">Structured authoring</span>
-                      <span className="chip">JSON-LD ready</span>
-                      <span className="chip">RLS migration</span>
-                      <span className="chip">Cache webhooks</span>
+                      <span className="chip">Structured drafting</span>
+                      <span className="chip">Printable lessons</span>
+                      <span className="chip">Shareable public pages</span>
+                      <span className="chip">Creator dashboard</span>
                     </div>
                   </div>
                 </div>
@@ -120,34 +119,34 @@ export default async function HomePage() {
         <div className="shell">
           <div className="section-head">
             <div className="stack-sm">
-              <span className="eyebrow">Launch sequence</span>
-              <h2 className="section-title">What the team can do next from here</h2>
+              <span className="eyebrow">What is coming next</span>
+              <h2 className="section-title">The next steps for the product journey</h2>
             </div>
           </div>
 
           <div className="three-column">
             <div className="surface-card">
-              <span className="chip-muted">1. Database</span>
-              <h3 className="card-title">Apply the Supabase migration</h3>
+              <span className="chip-muted">1. Publishing</span>
+              <h3 className="card-title">Move drafts into the public catalog</h3>
               <p className="body-copy">
-                The SQL migration defines the lesson, scripture, favorites, and
-                moderation tables plus row-level security helpers.
+                Finish the publish flow so creators can send ready lessons live
+                and immediately share them with the wider community.
               </p>
             </div>
             <div className="surface-card">
-              <span className="chip-muted">2. Auth</span>
-              <h3 className="card-title">Gate creator and admin routes</h3>
+              <span className="chip-muted">2. Favorites</span>
+              <h3 className="card-title">Let people save the studies they love</h3>
               <p className="body-copy">
-                The app now reads from Supabase, so the next high-value step is
-                protecting dashboard, saved, and moderation views with auth.
+                Add a personal saved list so members can return to meaningful
+                lessons and build a library for future gatherings.
               </p>
             </div>
             <div className="surface-card">
-              <span className="chip-muted">3. Mutations</span>
-              <h3 className="card-title">Add save, publish, favorite, and report flows</h3>
+              <span className="chip-muted">3. Reporting</span>
+              <h3 className="card-title">Create a clear path for care and moderation</h3>
               <p className="body-copy">
-                The read model, schema, and cache invalidation path are in
-                place; the remaining product work is wiring the write actions.
+                Add reporting tools so the public catalog stays helpful, safe,
+                and focused on serving people well.
               </p>
             </div>
           </div>

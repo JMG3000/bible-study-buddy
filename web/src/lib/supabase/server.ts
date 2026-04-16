@@ -41,3 +41,16 @@ export function createSupabaseStaticClient() {
     },
   });
 }
+
+export function createSupabaseServiceClient() {
+  if (!env.supabaseUrl || !env.supabaseServiceRoleKey) {
+    return null;
+  }
+
+  return createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
