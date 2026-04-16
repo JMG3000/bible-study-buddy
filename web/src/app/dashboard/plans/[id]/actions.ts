@@ -11,10 +11,25 @@ import {
   createSupabaseServerClient,
   createSupabaseServiceClient,
 } from "@/lib/supabase/server";
+import { reviewLessonContent } from "@/lib/content-review";
 import { appendMessage, slugifyText } from "@/lib/urls";
 
 function buildPlanRedirect(id: string, messageKey: string, message: string) {
   return appendMessage(`/dashboard/plans/${id}`, messageKey, message);
+}
+
+function isMissingCustomTagsColumnError(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "PGRST204" ||
+    error.message?.includes("custom_tags") === true
+  );
 }
 
 async function resolveUniqueSlug(
@@ -69,12 +84,14 @@ export async function publishLessonAction(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/dashboard/plans/${id}`)}`);
+    redirect("/login");
   }
 
   const { data: plan, error: planError } = await supabase
     .from("lesson_plans")
-    .select("id, author_id, title, summary, teaching_objective, status, slug")
+    .select(
+      "id, author_id, title, summary, teaching_objective, status, slug, opening_prayer, icebreaker, facilitator_notes, discussion_questions, activities, prayer_prompts, custom_tags",
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -83,7 +100,9 @@ export async function publishLessonAction(formData: FormData) {
       buildPlanRedirect(
         id,
         "error",
-        planError?.message ?? "We could not find that draft.",
+        isMissingCustomTagsColumnError(planError)
+          ? "Run the 0006_add_custom_tags.sql migration in Supabase before publishing this lesson."
+          : planError?.message ?? "We could not find that draft.",
       ),
     );
   }
@@ -124,11 +143,41 @@ export async function publishLessonAction(formData: FormData) {
     );
   }
 
+  const review = await reviewLessonContent({
+    title: plan.title,
+    summary: plan.summary,
+    teachingObjective: plan.teaching_objective,
+    openingPrayer: plan.opening_prayer,
+    icebreaker: plan.icebreaker,
+    facilitatorNotes: plan.facilitator_notes,
+    discussionQuestions: plan.discussion_questions ?? [],
+    activities: plan.activities ?? [],
+    prayerPrompts: plan.prayer_prompts ?? [],
+    customTags: plan.custom_tags ?? [],
+  });
+
+  if (!review.approved) {
+    await supabase
+      .from("lesson_plans")
+      .update({ moderation_state: "under_review" })
+      .eq("id", id);
+
+    redirect(
+      buildPlanRedirect(
+        id,
+        "error",
+        review.reason ??
+          "This lesson needs a quick manual review before it can be published.",
+      ),
+    );
+  }
+
   const slug = await resolveUniqueSlug(plan.title, id);
   const { data: updatedPlan, error: updateError } = await supabase
     .from("lesson_plans")
     .update({
       status: "published",
+      moderation_state: "none",
       slug,
     })
     .eq("id", id)

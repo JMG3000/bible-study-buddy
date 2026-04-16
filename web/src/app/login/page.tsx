@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentViewer } from "@/lib/lesson-plans";
-import { sanitizeNextPath } from "@/lib/urls";
 import { signInWithOAuthAction } from "./actions";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -27,15 +26,11 @@ export default async function LoginPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const [viewer, resolvedParams] = await Promise.all([
-    getCurrentViewer(),
-    searchParams,
-  ]);
-  const nextPath = sanitizeNextPath(readValue(resolvedParams, "next"), "/dashboard");
+  const [viewer, resolvedParams] = await Promise.all([getCurrentViewer(), searchParams]);
   const error = readValue(resolvedParams, "error");
 
   if (viewer) {
-    redirect(nextPath);
+    redirect("/dashboard");
   }
 
   return (
@@ -60,7 +55,6 @@ export default async function LoginPage({
           <div className="stack-sm">
             <form action={signInWithOAuthAction}>
               <input type="hidden" name="provider" value="google" />
-              <input type="hidden" name="next" value={nextPath} />
               <button type="submit" className="button auth-button">
                 Continue with Google
               </button>
@@ -68,7 +62,6 @@ export default async function LoginPage({
 
             <form action={signInWithOAuthAction}>
               <input type="hidden" name="provider" value="github" />
-              <input type="hidden" name="next" value={nextPath} />
               <button type="submit" className="button-secondary auth-button">
                 Continue with GitHub
               </button>
@@ -76,9 +69,8 @@ export default async function LoginPage({
           </div>
 
           <div className="subtle-panel">
-            After sign-in, you will return to{" "}
-            <span className="code-inline">{nextPath}</span>. If a provider button
-            fails, enable that provider in Supabase Auth first.
+            Choose the provider you trust on this device. On Google, the sign-in
+            flow now requests an account chooser before continuing.
           </div>
         </div>
       </div>

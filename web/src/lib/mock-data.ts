@@ -53,6 +53,7 @@ export const lessonPlans: LessonPlan[] = [
     topicTags: ["Community", "Discipleship", "Prayer"],
     audienceTags: ["Adults", "Small Groups"],
     denominationTags: ["Non-denominational", "Methodist"],
+    customTags: ["shared meals", "hospitality"],
     openingPrayer:
       "Ask God to make the group attentive to the work of the Spirit and eager to serve one another.",
     icebreaker:
@@ -100,6 +101,7 @@ export const lessonPlans: LessonPlan[] = [
     topicTags: ["Peace", "Prayer", "Identity in Christ"],
     audienceTags: ["Young Adults", "Adults", "New Believers"],
     denominationTags: ["Baptist", "Non-denominational"],
+    customTags: ["anxiety care", "trust"],
     openingPrayer:
       "Invite the Shepherd to quiet anxious thoughts and guide the group into deeper trust.",
     icebreaker:
@@ -145,6 +147,7 @@ export const lessonPlans: LessonPlan[] = [
     topicTags: ["Mercy", "Discipleship", "Leadership"],
     audienceTags: ["Students", "Young Adults"],
     denominationTags: ["Pentecostal", "Non-denominational"],
+    customTags: ["beatitudes", "student ministry"],
     openingPrayer:
       "Ask Jesus to form merciful hearts and illuminate the values of His kingdom.",
     icebreaker:
@@ -191,6 +194,7 @@ export const lessonPlans: LessonPlan[] = [
     topicTags: ["Faith in Action", "Discipleship"],
     audienceTags: ["Adults", "Small Groups"],
     denominationTags: ["Presbyterian"],
+    customTags: ["service", "mercy"],
     openingPrayer:
       "Ask God to keep the group from empty belief and awaken practical compassion.",
     icebreaker:
@@ -230,6 +234,7 @@ export const lessonPlans: LessonPlan[] = [
     topicTags: ["Leadership", "Community"],
     audienceTags: ["Adults", "Young Adults"],
     denominationTags: ["Lutheran"],
+    customTags: ["servant leadership"],
     openingPrayer:
       "Ask Jesus to shape servant hearts that mirror His humility.",
     icebreaker:

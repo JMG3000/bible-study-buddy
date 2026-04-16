@@ -78,6 +78,7 @@ begin
     setweight(to_tsvector('english', array_to_string(new.topic_tags, ' ')), 'A') ||
     setweight(to_tsvector('english', array_to_string(new.audience_tags, ' ')), 'B') ||
     setweight(to_tsvector('english', array_to_string(new.denomination_tags, ' ')), 'B') ||
+    setweight(to_tsvector('english', array_to_string(new.custom_tags, ' ')), 'B') ||
     setweight(to_tsvector('simple', replace(coalesce(new.author_handle, ''), '-', ' ')), 'A') ||
     setweight(to_tsvector('english', array_to_string(new.materials, ' ')), 'C') ||
     setweight(to_tsvector('english', array_to_string(new.activities, ' ')), 'B') ||
@@ -242,6 +243,7 @@ create table public.lesson_plans (
   topic_tags text[] not null default '{}',
   audience_tags text[] not null default '{}',
   denomination_tags text[] not null default '{}',
+  custom_tags text[] not null default '{}',
   opening_prayer text,
   icebreaker text,
   facilitator_notes text,
@@ -327,6 +329,9 @@ create index lesson_plans_audience_tags_gin
 
 create index lesson_plans_denomination_tags_gin
   on public.lesson_plans using gin (denomination_tags);
+
+create index lesson_plans_custom_tags_gin
+  on public.lesson_plans using gin (custom_tags);
 
 create index scripture_refs_plan_sequence_idx
   on public.scripture_refs (lesson_plan_id, sequence);

@@ -40,7 +40,7 @@ export default async function CreatePage({
   const error = readValue(resolvedParams, "error");
 
   if (!viewer) {
-    redirect("/login?next=/create");
+    redirect("/login");
   }
 
   return (
@@ -50,9 +50,9 @@ export default async function CreatePage({
           <span className="eyebrow">Authoring surface</span>
           <h1 className="page-title">Structured lesson editor</h1>
           <p className="lead">
-            Signed-in creators can now draft new lesson plans directly against
-            the live Supabase schema. This form creates a draft and stores one
-            normalized scripture range with it.
+            Signed-in creators can build a draft lesson with guided teaching
+            fields, a scripture selector, and custom tags that make the lesson
+            easier to find later.
           </p>
         </div>
 
@@ -279,6 +279,16 @@ export default async function CreatePage({
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div className="field">
+              <label htmlFor="customTags">Custom tags</label>
+              <textarea
+                id="customTags"
+                name="customTags"
+                className="textarea"
+                placeholder="One custom tag per line, such as hospitality, college ministry, or prayer night"
+              />
             </div>
 
             <div className="field">

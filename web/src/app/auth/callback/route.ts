@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { appendMessage, sanitizeNextPath } from "@/lib/urls";
+import { appendMessage, POST_AUTH_REDIRECT_COOKIE, sanitizeNextPath } from "@/lib/urls";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const nextPath = sanitizeNextPath(
-    request.nextUrl.searchParams.get("next"),
+    request.cookies.get(POST_AUTH_REDIRECT_COOKIE)?.value,
     "/dashboard",
   );
 
   if (!code) {
     const loginUrl = new URL(
-      appendMessage(
-        `/login?next=${encodeURIComponent(nextPath)}`,
-        "error",
-        "Sign-in did not return an authorization code.",
-      ),
+      appendMessage("/login", "error", "Sign-in did not return an authorization code."),
       request.url,
     );
 
@@ -26,11 +22,7 @@ export async function GET(request: NextRequest) {
 
   if (!supabase) {
     const loginUrl = new URL(
-      appendMessage(
-        `/login?next=${encodeURIComponent(nextPath)}`,
-        "error",
-        "Supabase auth is not configured in this environment.",
-      ),
+      appendMessage("/login", "error", "Supabase auth is not configured in this environment."),
       request.url,
     );
 
@@ -41,16 +33,14 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     const loginUrl = new URL(
-      appendMessage(
-        `/login?next=${encodeURIComponent(nextPath)}`,
-        "error",
-        error.message,
-      ),
+      appendMessage("/login", "error", error.message),
       request.url,
     );
 
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.redirect(new URL(nextPath, request.url));
+  const response = NextResponse.redirect(new URL(nextPath, request.url));
+  response.cookies.delete(POST_AUTH_REDIRECT_COOKIE);
+  return response;
 }

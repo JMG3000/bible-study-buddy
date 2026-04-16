@@ -56,8 +56,8 @@ export default async function PlansPage({
           <h1 className="page-title">Browse published lesson plans</h1>
           <p className="lead">
             Filter by topic, audience, denomination, duration, or scripture
-            book. These results now come from Supabase using the production
-            lesson-plan schema and scripture reference model.
+            book. You can also search creator usernames and custom lesson tags
+            from the same catalog.
           </p>
         </div>
 
@@ -187,8 +187,8 @@ export default async function PlansPage({
               <div className="meta-row">
                 <span className="chip-accent">{results.length} results</span>
                 <span>
-                  Search by lesson topics, scripture focus, or a creator handle
-                  like @biblestudyfriend.
+                  Search by lesson topics, custom tags, scripture focus, or a
+                  creator username like @biblestudyfriend.
                 </span>
               </div>
             </div>

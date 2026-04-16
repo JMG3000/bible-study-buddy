@@ -30,6 +30,7 @@ interface LessonPlanRow {
   topic_tags: string[] | null;
   audience_tags: string[] | null;
   denomination_tags: string[] | null;
+  custom_tags: string[] | null;
   opening_prayer: string | null;
   icebreaker: string | null;
   facilitator_notes: string | null;
@@ -109,6 +110,7 @@ const LESSON_PLAN_SELECT = `
   topic_tags,
   audience_tags,
   denomination_tags,
+  custom_tags,
   opening_prayer,
   icebreaker,
   facilitator_notes,
@@ -123,6 +125,33 @@ const LESSON_PLAN_SELECT = `
 `;
 
 const LEGACY_LESSON_PLAN_SELECT = `
+  id,
+  author_id,
+  author_handle,
+  slug,
+  status,
+  moderation_state,
+  title,
+  summary,
+  teaching_objective,
+  duration_minutes,
+  topic_tags,
+  audience_tags,
+  denomination_tags,
+  opening_prayer,
+  icebreaker,
+  facilitator_notes,
+  materials,
+  activities,
+  discussion_questions,
+  prayer_prompts,
+  handout_urls,
+  published_at,
+  created_at,
+  updated_at
+`;
+
+const AUTHOR_HANDLE_LEGACY_LESSON_PLAN_SELECT = `
   id,
   author_id,
   slug,
@@ -162,21 +191,52 @@ function isMissingAuthorHandleColumnError(error: {
   );
 }
 
+function isMissingCustomTagsColumnError(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "PGRST204" ||
+    error.message?.includes("custom_tags") === true
+  );
+}
+
 function coerceLessonPlanRows(
-  data: LessonPlanRow[] | Array<Omit<LessonPlanRow, "author_handle">> | null,
-  includesAuthorHandle: boolean,
+  data:
+    | LessonPlanRow[]
+    | Array<Omit<LessonPlanRow, "author_handle" | "custom_tags">>
+    | Array<Omit<LessonPlanRow, "custom_tags">>
+    | null,
+  options: {
+    includesAuthorHandle: boolean;
+    includesCustomTags: boolean;
+  },
 ) {
   const rows =
-    (data as LessonPlanRow[] | Array<Omit<LessonPlanRow, "author_handle">> | null) ??
+    (data as
+      | LessonPlanRow[]
+      | Array<Omit<LessonPlanRow, "author_handle" | "custom_tags">>
+      | Array<Omit<LessonPlanRow, "custom_tags">>
+      | null) ??
     [];
 
-  if (includesAuthorHandle) {
+  if (options.includesAuthorHandle && options.includesCustomTags) {
     return rows as LessonPlanRow[];
   }
 
   return rows.map((row) => ({
     ...row,
-    author_handle: null,
+    author_handle:
+      options.includesAuthorHandle
+        ? (row as LessonPlanRow).author_handle
+        : null,
+    custom_tags: options.includesCustomTags
+      ? (row as LessonPlanRow).custom_tags
+      : [],
   })) as LessonPlanRow[];
 }
 
@@ -190,19 +250,47 @@ async function runLessonPlanQuery(
 
   if (!current.error) {
     return coerceLessonPlanRows(
-      current.data as LessonPlanRow[] | Array<Omit<LessonPlanRow, "author_handle">> | null,
-      true,
+      current.data as LessonPlanRow[] | Array<Omit<LessonPlanRow, "custom_tags">> | null,
+      {
+        includesAuthorHandle: true,
+        includesCustomTags: true,
+      },
     );
   }
 
-  if (!isMissingAuthorHandleColumnError(current.error)) {
+  if (isMissingCustomTagsColumnError(current.error)) {
+    const customTagsLegacy = await buildQuery(LEGACY_LESSON_PLAN_SELECT);
+
+    if (!customTagsLegacy.error) {
+      return coerceLessonPlanRows(
+        customTagsLegacy.data as
+          | LessonPlanRow[]
+          | Array<Omit<LessonPlanRow, "custom_tags">>
+          | null,
+        {
+          includesAuthorHandle: true,
+          includesCustomTags: false,
+        },
+      );
+    }
+
+    if (!isMissingAuthorHandleColumnError(customTagsLegacy.error)) {
+      return [];
+    }
+  } else if (!isMissingAuthorHandleColumnError(current.error)) {
     return [];
   }
 
-  const legacy = await buildQuery(LEGACY_LESSON_PLAN_SELECT);
+  const legacy = await buildQuery(AUTHOR_HANDLE_LEGACY_LESSON_PLAN_SELECT);
   return coerceLessonPlanRows(
-    legacy.data as LessonPlanRow[] | Array<Omit<LessonPlanRow, "author_handle">> | null,
-    false,
+    legacy.data as
+      | LessonPlanRow[]
+      | Array<Omit<LessonPlanRow, "author_handle" | "custom_tags">>
+      | null,
+    {
+      includesAuthorHandle: false,
+      includesCustomTags: false,
+    },
   );
 }
 
@@ -300,6 +388,7 @@ async function hydrateLessonPlans(
       topicTags: row.topic_tags ?? [],
       audienceTags: row.audience_tags ?? [],
       denominationTags: row.denomination_tags ?? [],
+      customTags: row.custom_tags ?? [],
       openingPrayer: row.opening_prayer ?? undefined,
       icebreaker: row.icebreaker ?? undefined,
       facilitatorNotes: row.facilitator_notes ?? undefined,

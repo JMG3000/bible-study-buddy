@@ -39,6 +39,7 @@ export interface LessonPlan {
   topicTags: string[];
   audienceTags: string[];
   denominationTags: string[];
+  customTags: string[];
   openingPrayer?: string;
   icebreaker?: string;
   facilitatorNotes?: string;

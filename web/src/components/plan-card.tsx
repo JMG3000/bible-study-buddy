@@ -8,6 +8,7 @@ export function PlanCard({ plan }: { plan: LessonPlan }) {
     plan.status === "published" && plan.slug
       ? `/plans/${plan.slug}`
       : `/dashboard/plans/${plan.id}`;
+  const visibleTags = [...new Set([...plan.topicTags, ...plan.customTags])].slice(0, 5);
 
   return (
     <article className="surface-card">
@@ -23,7 +24,7 @@ export function PlanCard({ plan }: { plan: LessonPlan }) {
       </div>
 
       <div className="tag-list">
-        {plan.topicTags.map((tag) => (
+        {visibleTags.map((tag) => (
           <span key={tag} className="chip-muted">
             {tag}
           </span>

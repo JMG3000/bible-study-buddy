@@ -182,12 +182,19 @@ export default async function LessonPlanDetailPage({ params }: PageProps) {
             <div className="stack-sm">
               <h2 className="section-title">Session details</h2>
               <div className="tag-list">
-                {plan.topicTags.map((tag) => (
+                {[...new Set([...plan.topicTags, ...plan.customTags])].map((tag) => (
                   <span key={tag} className="chip-muted">
                     {tag}
                   </span>
                 ))}
               </div>
+
+              {plan.customTags.length > 0 ? (
+                <div className="stack-sm">
+                  <strong>Custom tags</strong>
+                  <p className="body-copy">{plan.customTags.join(", ")}</p>
+                </div>
+              ) : null}
 
               <div className="stack-sm">
                 <strong>Audience</strong>

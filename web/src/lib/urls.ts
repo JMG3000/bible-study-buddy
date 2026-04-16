@@ -1,3 +1,10 @@
+export const POST_AUTH_REDIRECT_COOKIE = "bsb_post_auth_redirect";
+export const IDLE_SESSION_STORAGE_KEY = "bsb_last_activity";
+export const IDLE_ACTIVITY_COOKIE = "bsb_last_activity_at";
+export const IDLE_SESSION_TIMEOUT_MS = 60 * 60 * 1000;
+export const AUTH_SESSION_EXPIRED_MESSAGE =
+  "Your session expired after inactivity. Please sign in again.";
+
 export function sanitizeNextPath(
   value: FormDataEntryValue | string | null | undefined,
   fallback = "/dashboard",

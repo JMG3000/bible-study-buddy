@@ -82,11 +82,8 @@ export default async function DashboardPlanPage({
 
         {publishedSlug ? (
           <div className="helper-banner">
-            Lesson published successfully. It is now available at{" "}
-            <Link href={`/plans/${publishedSlug}`} className="inline-link">
-              /plans/{publishedSlug}
-            </Link>
-            .
+            Lesson published successfully. You can now open the public lesson
+            page or return to the catalog.
           </div>
         ) : null}
 
@@ -162,12 +159,12 @@ export default async function DashboardPlanPage({
             <h2 className="section-title">Next step for this draft</h2>
             <div className="stack-sm">
               <p className="body-copy">
-                This page now gives you a direct publish step. In-place editing,
-                favorites, and reporting are the next product layers we can add
-                after the publish flow is settled.
+                This review step now checks for basic inappropriate language
+                before publication. In-place editing, favorites, and reporting
+                remain the next product layers after this publish flow settles.
               </p>
               <div className="tag-list">
-                {plan.topicTags.map((tag) => (
+                {[...new Set([...plan.topicTags, ...plan.customTags])].map((tag) => (
                   <span key={tag} className="chip-muted">
                     {tag}
                   </span>

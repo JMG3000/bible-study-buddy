@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SessionTimeout } from "@/components/session-timeout";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { siteConfig } from "@/lib/site";
@@ -41,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <SessionTimeout />
         <div className="site-shell">
           <SiteHeader />
           <main className="site-main">{children}</main>

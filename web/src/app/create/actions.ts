@@ -17,6 +17,15 @@ function parseLines(formData: FormData, key: string) {
     .filter(Boolean);
 }
 
+function parseCustomTags(formData: FormData, key: string) {
+  return [...new Set(
+    String(formData.get(key) ?? "")
+      .split(/[\r\n,]+/)
+      .map((value) => value.trim())
+      .filter(Boolean),
+  )];
+}
+
 function formatScriptureLabel(
   bookName: string,
   chapterStart: number,
@@ -39,6 +48,20 @@ function buildCreateRedirect(message: string) {
   return appendMessage("/create", "error", message);
 }
 
+function isMissingCustomTagsColumnError(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "PGRST204" ||
+    error.message?.includes("custom_tags") === true
+  );
+}
+
 export async function createLessonDraftAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
 
@@ -51,7 +74,7 @@ export async function createLessonDraftAction(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?next=/create");
+    redirect("/login");
   }
 
   const title = String(formData.get("title") ?? "").trim();
@@ -81,6 +104,7 @@ export async function createLessonDraftAction(formData: FormData) {
   const activities = parseLines(formData, "activities");
   const discussionQuestions = parseLines(formData, "discussionQuestions");
   const prayerPrompts = parseLines(formData, "prayerPrompts");
+  const customTags = parseCustomTags(formData, "customTags");
   const bookSlug = String(formData.get("book") ?? "");
   const book = getBookBySlug(bookSlug);
 
@@ -115,6 +139,18 @@ export async function createLessonDraftAction(formData: FormData) {
     redirect(buildCreateRedirect("Enter a valid scripture chapter and verse range."));
   }
 
+  if (customTags.length > 10) {
+    redirect(
+      buildCreateRedirect("Use up to 10 custom tags so lessons stay easy to search."),
+    );
+  }
+
+  if (customTags.some((tag) => tag.length > 40)) {
+    redirect(
+      buildCreateRedirect("Keep each custom tag to 40 characters or fewer."),
+    );
+  }
+
   const { data: insertedPlan, error: planError } = await supabase
     .from("lesson_plans")
     .insert({
@@ -127,6 +163,7 @@ export async function createLessonDraftAction(formData: FormData) {
       topic_tags: topicTags,
       audience_tags: audienceTags,
       denomination_tags: denominationTags,
+      custom_tags: customTags,
       opening_prayer: openingPrayer || null,
       icebreaker: icebreaker || null,
       facilitator_notes: facilitatorNotes || null,
@@ -142,7 +179,9 @@ export async function createLessonDraftAction(formData: FormData) {
   if (planError || !insertedPlan) {
     redirect(
       buildCreateRedirect(
-        planError?.message ?? "Unable to create a new lesson draft.",
+        isMissingCustomTagsColumnError(planError)
+          ? "Run the 0006_add_custom_tags.sql migration in Supabase, then save your draft again."
+          : planError?.message ?? "Unable to create a new lesson draft.",
       ),
     );
   }
