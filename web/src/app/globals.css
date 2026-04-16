@@ -533,6 +533,10 @@ img {
   font-size: 1.05rem;
 }
 
+.detail-author {
+  font-weight: 700;
+}
+
 .detail-section {
   padding: 1.25rem;
   border: 1px solid var(--border);
@@ -627,6 +631,49 @@ img {
 
 .no-print {
   print-color-adjust: exact;
+}
+
+.handle-input-group {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 252, 247, 0.92);
+  overflow: hidden;
+}
+
+.handle-prefix {
+  padding: 0.9rem 0 0.9rem 1rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.handle-input-group .input {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.print-prep-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(20, 14, 8, 0.58);
+  z-index: 60;
+}
+
+.print-prep-modal {
+  width: min(100%, 760px);
+  max-height: min(88vh, 980px);
+  overflow-y: auto;
+}
+
+.print-prep-grid {
+  display: grid;
+  gap: 0.9rem;
 }
 
 @media (max-width: 980px) {

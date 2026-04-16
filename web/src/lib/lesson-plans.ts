@@ -19,6 +19,7 @@ import type {
 interface LessonPlanRow {
   id: string;
   author_id: string;
+  author_handle: string | null;
   slug: string | null;
   status: LessonPlan["status"];
   moderation_state: LessonPlan["moderationState"];
@@ -84,9 +85,20 @@ export interface ViewerContext {
   role: UserRole;
 }
 
+function normalizeHandleQuery(value: string) {
+  return value
+    .trim()
+    .replace(/^@/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
 const LESSON_PLAN_SELECT = `
   id,
   author_id,
+  author_handle,
   slug,
   status,
   moderation_state,
@@ -188,12 +200,13 @@ async function hydrateLessonPlans(
       };
     });
 
-      return {
-        id: row.id,
-        slug: row.slug,
-        authorId: row.author_id,
-        authorName: author?.display_name ?? authorFallback,
-        authorRole: "creator",
+    return {
+      id: row.id,
+      slug: row.slug,
+      authorId: row.author_id,
+      authorName: author?.display_name ?? authorFallback,
+      authorHandle: row.author_handle ?? author?.handle ?? null,
+      authorRole: "creator",
       status: row.status,
       moderationState: row.moderation_state,
       title: row.title,
@@ -226,37 +239,7 @@ async function fetchPublishedPlansRows(filters: LessonPlanFilters = {}) {
     return [];
   }
 
-  let query = supabase
-    .from("lesson_plans")
-    .select(LESSON_PLAN_SELECT)
-    .eq("status", "published");
-
-  if (filters.q) {
-    query = query.textSearch("search_tsv", filters.q, {
-      type: "websearch",
-      config: "english",
-    });
-  }
-
-  if (filters.topic) {
-    query = query.contains("topic_tags", [filters.topic]);
-  }
-
-  if (filters.audience) {
-    query = query.contains("audience_tags", [filters.audience]);
-  }
-
-  if (filters.denomination) {
-    query = query.contains("denomination_tags", [filters.denomination]);
-  }
-
-  if (filters.duration === "short") {
-    query = query.lte("duration_minutes", 30);
-  } else if (filters.duration === "medium") {
-    query = query.gte("duration_minutes", 31).lte("duration_minutes", 60);
-  } else if (filters.duration === "long") {
-    query = query.gte("duration_minutes", 61);
-  }
+  let matchingBookPlanIds: string[] | null = null;
 
   if (filters.book) {
     const book = getBookBySlug(filters.book);
@@ -270,7 +253,7 @@ async function fetchPublishedPlansRows(filters: LessonPlanFilters = {}) {
       .select("lesson_plan_id")
       .eq("book_code", book.bookCode);
 
-    const planIds = [
+    matchingBookPlanIds = [
       ...new Set(
         ((scriptureMatches as Array<{ lesson_plan_id: string }> | null) ?? []).map(
           (row) => row.lesson_plan_id,
@@ -278,15 +261,81 @@ async function fetchPublishedPlansRows(filters: LessonPlanFilters = {}) {
       ),
     ];
 
-    if (planIds.length === 0) {
+    if (matchingBookPlanIds.length === 0) {
       return [];
     }
-
-    query = query.in("id", planIds);
   }
 
-  const { data } = await query.order("published_at", { ascending: false });
-  return (data as LessonPlanRow[] | null) ?? [];
+  const buildBaseQuery = () => {
+    let query = supabase
+      .from("lesson_plans")
+      .select(LESSON_PLAN_SELECT)
+      .eq("status", "published");
+
+    if (filters.topic) {
+      query = query.contains("topic_tags", [filters.topic]);
+    }
+
+    if (filters.audience) {
+      query = query.contains("audience_tags", [filters.audience]);
+    }
+
+    if (filters.denomination) {
+      query = query.contains("denomination_tags", [filters.denomination]);
+    }
+
+    if (filters.duration === "short") {
+      query = query.lte("duration_minutes", 30);
+    } else if (filters.duration === "medium") {
+      query = query.gte("duration_minutes", 31).lte("duration_minutes", 60);
+    } else if (filters.duration === "long") {
+      query = query.gte("duration_minutes", 61);
+    }
+
+    if (matchingBookPlanIds) {
+      query = query.in("id", matchingBookPlanIds);
+    }
+
+    return query;
+  };
+
+  if (!filters.q) {
+    const { data } = await buildBaseQuery().order("published_at", { ascending: false });
+    return (data as LessonPlanRow[] | null) ?? [];
+  }
+
+  const handleQuery = normalizeHandleQuery(filters.q);
+  const [{ data: textMatches }, { data: handleMatches }] = await Promise.all([
+    buildBaseQuery()
+      .textSearch("search_tsv", filters.q, {
+        type: "websearch",
+        config: "english",
+      })
+      .order("published_at", { ascending: false }),
+    handleQuery
+      ? buildBaseQuery()
+          .ilike("author_handle", `%${handleQuery}%`)
+          .order("published_at", { ascending: false })
+      : Promise.resolve({ data: [] as LessonPlanRow[] }),
+  ]);
+
+  const merged = new Map<string, LessonPlanRow>();
+
+  for (const row of (handleMatches as LessonPlanRow[] | null) ?? []) {
+    merged.set(row.id, row);
+  }
+
+  for (const row of (textMatches as LessonPlanRow[] | null) ?? []) {
+    if (!merged.has(row.id)) {
+      merged.set(row.id, row);
+    }
+  }
+
+  return [...merged.values()].sort((left, right) => {
+    const leftDate = Date.parse(left.published_at ?? left.updated_at);
+    const rightDate = Date.parse(right.published_at ?? right.updated_at);
+    return rightDate - leftDate;
+  });
 }
 
 const getFeaturedPlansCached = unstable_cache(async () => {

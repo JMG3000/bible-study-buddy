@@ -61,6 +61,13 @@ language plpgsql
 set search_path = public, pg_temp
 as $$
 begin
+  select p.handle
+  into new.author_handle
+  from public.profiles p
+  where p.user_id = new.author_id;
+
+  new.author_handle := coalesce(new.author_handle, 'friend');
+
   new.search_tsv :=
     setweight(to_tsvector('english', coalesce(new.title, '')), 'A') ||
     setweight(to_tsvector('english', coalesce(new.summary, '')), 'A') ||
@@ -71,6 +78,7 @@ begin
     setweight(to_tsvector('english', array_to_string(new.topic_tags, ' ')), 'A') ||
     setweight(to_tsvector('english', array_to_string(new.audience_tags, ' ')), 'B') ||
     setweight(to_tsvector('english', array_to_string(new.denomination_tags, ' ')), 'B') ||
+    setweight(to_tsvector('simple', replace(coalesce(new.author_handle, ''), '-', ' ')), 'A') ||
     setweight(to_tsvector('english', array_to_string(new.materials, ' ')), 'C') ||
     setweight(to_tsvector('english', array_to_string(new.activities, ' ')), 'B') ||
     setweight(to_tsvector('english', array_to_string(new.discussion_questions, ' ')), 'B') ||
@@ -223,6 +231,7 @@ create table public.bible_books (
 create table public.lesson_plans (
   id uuid primary key default gen_random_uuid(),
   author_id uuid not null references public.profiles(user_id) on delete restrict,
+  author_handle text not null,
   slug text,
   status public.lesson_plan_status not null default 'draft',
   moderation_state public.moderation_state not null default 'none',
@@ -436,13 +445,22 @@ using (auth.uid() = user_id or public.is_admin());
 create policy "profiles_insert_own_or_admin"
 on public.profiles
 for insert
-with check (auth.uid() = user_id or public.is_admin());
+with check (
+  public.is_admin()
+  or (auth.uid() = user_id and role = 'creator')
+);
 
 create policy "profiles_update_own_or_admin"
 on public.profiles
 for update
 using (auth.uid() = user_id or public.is_admin())
-with check (auth.uid() = user_id or public.is_admin());
+with check (
+  public.is_admin()
+  or (
+    auth.uid() = user_id
+    and role = public.current_profile_role()
+  )
+);
 
 create policy "bible_books_public_select"
 on public.bible_books

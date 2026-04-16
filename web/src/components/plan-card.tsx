@@ -37,7 +37,13 @@ export function PlanCard({ plan }: { plan: LessonPlan }) {
       </div>
 
       <div className="plan-card-footer">
-        <span className="meta-text">By {plan.authorName}</span>
+        {plan.status === "published" && plan.authorHandle ? (
+          <Link href={`/plans?q=%40${plan.authorHandle}`} className="meta-text inline-link">
+            Made by @{plan.authorHandle}
+          </Link>
+        ) : (
+          <span className="meta-text">By {plan.authorName}</span>
+        )}
         <Link href={href} className="button-tertiary">
           {plan.status === "published" ? "View lesson" : "Open editor"}
         </Link>

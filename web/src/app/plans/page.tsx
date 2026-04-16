@@ -84,7 +84,7 @@ export default async function PlansPage({
                   id="q"
                   name="q"
                   defaultValue={filters.q}
-                  placeholder="community, mercy, prayer..."
+                  placeholder="community, mercy, prayer, @creator..."
                 />
               </div>
 
@@ -187,8 +187,8 @@ export default async function PlansPage({
               <div className="meta-row">
                 <span className="chip-accent">{results.length} results</span>
                 <span>
-                  Search uses Supabase-backed full-text filtering and
-                  scripture-aware relational lookups.
+                  Search by lesson topics, scripture focus, or a creator handle
+                  like @biblestudyfriend.
                 </span>
               </div>
             </div>

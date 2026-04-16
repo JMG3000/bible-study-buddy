@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/print-button";
@@ -58,7 +59,7 @@ export default async function LessonPlanDetailPage({ params }: PageProps) {
     url: buildCanonicalUrl(slug),
     author: {
       "@type": "Person",
-      name: plan.authorName,
+      name: plan.authorHandle ? `@${plan.authorHandle}` : plan.authorName,
     },
     timeRequired: `PT${plan.durationMinutes}M`,
     educationalLevel: plan.audienceTags.join(", "),
@@ -75,7 +76,6 @@ export default async function LessonPlanDetailPage({ params }: PageProps) {
             <span className="status-pill published">Published</span>
             <span>{formatDate(plan.publishedAt)}</span>
             <span>{plan.durationMinutes} minutes</span>
-            <span>By {plan.authorName}</span>
           </div>
         </div>
 
@@ -83,6 +83,11 @@ export default async function LessonPlanDetailPage({ params }: PageProps) {
           <span className="eyebrow">Printable lesson detail</span>
           <h1 className="detail-title">{plan.title}</h1>
           <p className="detail-summary">{plan.summary}</p>
+          {plan.authorHandle ? (
+            <Link href={`/plans?q=%40${plan.authorHandle}`} className="detail-author inline-link no-print">
+              Made by @{plan.authorHandle}
+            </Link>
+          ) : null}
         </div>
 
         <div className="detail-grid">
@@ -171,7 +176,7 @@ export default async function LessonPlanDetailPage({ params }: PageProps) {
           <aside className="detail-sidebar-card surface-card">
             <div className="stack-sm no-print">
               <span className="chip-accent">Ready for the room</span>
-              <PrintButton />
+              <PrintButton plan={plan} />
             </div>
 
             <div className="stack-sm">

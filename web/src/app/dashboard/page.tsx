@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { PlanCard } from "@/components/plan-card";
+import { updateHandleAction } from "@/app/dashboard/actions";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getCurrentViewer, getDashboardPlans } from "@/lib/lesson-plans";
 import { signOutAction } from "@/app/login/actions";
@@ -36,6 +37,8 @@ export default async function DashboardPage({
   ]);
   const supabaseReady = isSupabaseConfigured();
   const created = readValue(resolvedParams, "created") === "1";
+  const handleSaved = readValue(resolvedParams, "handle") === "saved";
+  const handleError = readValue(resolvedParams, "handleError");
 
   return (
     <section className="section">
@@ -88,19 +91,67 @@ export default async function DashboardPage({
           </div>
         ) : null}
 
+        {handleSaved ? (
+          <div className="helper-banner">
+            Your public creator handle was updated successfully.
+          </div>
+        ) : null}
+
+        {handleError ? (
+          <div className="helper-banner" role="alert">
+            {handleError}
+          </div>
+        ) : null}
+
         {viewer ? (
-          plans.length > 0 ? (
-            <div className="card-grid">
-              {plans.map((plan) => (
-                <PlanCard key={plan.id} plan={plan} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="No lesson plans for this account yet"
-              description="Create your first draft after signing in to start building your lesson library."
-            />
-          )
+          <>
+            <section className="surface-card stack-sm">
+              <div className="stack-sm">
+                <h2 className="section-title">Public creator handle</h2>
+                <p className="body-copy">
+                  Your handle appears on public lesson pages and lets people search
+                  for the lessons you create.
+                </p>
+              </div>
+
+              <form action={updateHandleAction} className="stack-sm">
+                <div className="field">
+                  <label htmlFor="handle">Handle</label>
+                  <div className="handle-input-group">
+                    <span className="handle-prefix">@</span>
+                    <input
+                      id="handle"
+                      name="handle"
+                      className="input"
+                      defaultValue={viewer.handle}
+                      spellCheck={false}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                    />
+                  </div>
+                </div>
+
+                <div className="inline-actions">
+                  <button type="submit" className="button-secondary">
+                    Save handle
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            {plans.length > 0 ? (
+              <div className="card-grid">
+                {plans.map((plan) => (
+                  <PlanCard key={plan.id} plan={plan} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No lesson plans for this account yet"
+                description="Create your first draft after signing in to start building your lesson library."
+              />
+            )}
+          </>
         ) : (
           <EmptyState
             title="Sign in to open your dashboard"

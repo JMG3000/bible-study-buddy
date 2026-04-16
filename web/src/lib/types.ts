@@ -28,6 +28,7 @@ export interface LessonPlan {
   slug: string | null;
   authorId: string;
   authorName: string;
+  authorHandle: string | null;
   authorRole: UserRole;
   status: LessonPlanStatus;
   moderationState: ModerationState;
