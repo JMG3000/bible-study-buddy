@@ -4,21 +4,10 @@ import { getCurrentViewer } from "@/lib/lesson-plans";
 
 export async function SiteHeader() {
   const viewer = await getCurrentViewer();
-  const navLinks = viewer
-    ? [
-        { href: "/plans", label: "Browse Plans" },
-        { href: "/create", label: "Create" },
-        { href: "/dashboard", label: "Dashboard" },
-        { href: "/settings/profile", label: "Profile" },
-        ...(viewer.role === "admin"
-          ? [{ href: "/admin/reports", label: "Moderation" }]
-          : []),
-      ]
-    : [
-        { href: "/plans", label: "Browse Plans" },
-        { href: "/create", label: "Create" },
-        { href: "/login", label: "Sign In" },
-      ];
+  const navLinks = [
+    { href: "/plans", label: "Browse" },
+    { href: "/dashboard", label: "Dashboard" },
+  ];
 
   return (
     <header className="site-header no-print">
@@ -42,17 +31,17 @@ export async function SiteHeader() {
         </nav>
 
         <div className="site-actions">
-          <Link href="/create" className="button-secondary">
-            Start a Lesson
-          </Link>
-
           {viewer ? (
             <form action={signOutAction}>
               <button type="submit" className="button-tertiary">
                 Sign out
               </button>
             </form>
-          ) : null}
+          ) : (
+            <Link href="/login" className="button-tertiary">
+              Sign in
+            </Link>
+          )}
         </div>
       </div>
     </header>

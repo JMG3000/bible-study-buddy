@@ -5,6 +5,8 @@ import { env } from "@/lib/env";
 import {
   HOME_TAG,
   PLAN_LIST_TAG,
+  SERIES_LIST_TAG,
+  studySeriesPath,
 } from "@/lib/revalidation";
 import { createSupabaseServerClient, createSupabaseStaticClient } from "@/lib/supabase/server";
 import type {
@@ -13,6 +15,8 @@ import type {
   Report,
   ReportReason,
   ReportStatus,
+  StudySeries,
+  StudySeriesMembership,
   UserRole,
 } from "@/lib/types";
 
@@ -67,6 +71,25 @@ interface ProfileRow {
   display_name: string;
   handle: string;
   role: UserRole;
+}
+
+interface StudySeriesRow {
+  id: string;
+  author_id: string;
+  author_handle: string | null;
+  slug: string | null;
+  status: LessonPlan["status"];
+  title: string;
+  summary: string;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface StudySeriesLessonRow {
+  series_id: string;
+  lesson_plan_id: string;
+  position: number;
 }
 
 interface ReportRow {
@@ -177,6 +200,19 @@ const AUTHOR_HANDLE_LEGACY_LESSON_PLAN_SELECT = `
   updated_at
 `;
 
+const STUDY_SERIES_SELECT = `
+  id,
+  author_id,
+  author_handle,
+  slug,
+  status,
+  title,
+  summary,
+  published_at,
+  created_at,
+  updated_at
+`;
+
 function isMissingAuthorHandleColumnError(error: {
   code?: string;
   message?: string;
@@ -202,6 +238,21 @@ function isMissingCustomTagsColumnError(error: {
   return (
     error.code === "PGRST204" ||
     error.message?.includes("custom_tags") === true
+  );
+}
+
+function isMissingStudySeriesRelationError(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "PGRST205" ||
+    error.code === "42P01" ||
+    error.message?.includes("study_series") === true
   );
 }
 
@@ -333,23 +384,93 @@ async function fetchScriptures(client: SupabaseClient, planIds: string[]) {
   return grouped;
 }
 
+async function fetchStudySeriesMemberships(
+  client: SupabaseClient,
+  planIds: string[],
+) {
+  if (planIds.length === 0) {
+    return new Map<string, StudySeriesMembership[]>();
+  }
+
+  const { data: membershipRows, error: membershipError } = await client
+    .from("study_series_lessons")
+    .select("series_id, lesson_plan_id, position")
+    .in("lesson_plan_id", planIds)
+    .order("position", { ascending: true });
+
+  if (isMissingStudySeriesRelationError(membershipError)) {
+    return new Map<string, StudySeriesMembership[]>();
+  }
+
+  const typedMembershipRows = (membershipRows as StudySeriesLessonRow[] | null) ?? [];
+  const seriesIds = [...new Set(typedMembershipRows.map((row) => row.series_id))];
+
+  if (seriesIds.length === 0) {
+    return new Map<string, StudySeriesMembership[]>();
+  }
+
+  const { data: seriesRows, error: seriesError } = await client
+    .from("study_series")
+    .select("id, slug, title")
+    .in("id", seriesIds);
+
+  if (isMissingStudySeriesRelationError(seriesError)) {
+    return new Map<string, StudySeriesMembership[]>();
+  }
+
+  const seriesMap = new Map<
+    string,
+    Pick<StudySeries, "id" | "slug" | "title">
+  >(
+    (((seriesRows as Array<{ id: string; slug: string | null; title: string }> | null) ?? []).map(
+      (row) => [row.id, row],
+    )),
+  );
+
+  const grouped = new Map<string, StudySeriesMembership[]>();
+
+  for (const membership of typedMembershipRows) {
+    const series = seriesMap.get(membership.series_id);
+
+    if (!series) {
+      continue;
+    }
+
+    const current = grouped.get(membership.lesson_plan_id) ?? [];
+    current.push({
+      seriesId: series.id,
+      seriesSlug: series.slug,
+      seriesTitle: series.title,
+      position: membership.position,
+    });
+    grouped.set(membership.lesson_plan_id, current);
+  }
+
+  return grouped;
+}
+
 async function hydrateLessonPlans(
   client: SupabaseClient,
   rows: LessonPlanRow[],
   options: {
     includeAuthorNames?: boolean;
     authorFallback?: string;
+    includeSeriesMemberships?: boolean;
   } = {},
 ) {
   const planIds = rows.map((row) => row.id);
   const authorIds = [...new Set(rows.map((row) => row.author_id))];
   const includeAuthorNames = options.includeAuthorNames ?? true;
   const authorFallback = options.authorFallback ?? "Unknown Author";
-  const [authors, scriptures] = await Promise.all([
+  const includeSeriesMemberships = options.includeSeriesMemberships ?? true;
+  const [authors, scriptures, seriesMemberships] = await Promise.all([
     includeAuthorNames
       ? fetchAuthors(client, authorIds)
       : Promise.resolve(new Map<string, AuthorRow>()),
     fetchScriptures(client, planIds),
+    includeSeriesMemberships
+      ? fetchStudySeriesMemberships(client, planIds)
+      : Promise.resolve(new Map<string, StudySeriesMembership[]>()),
   ]);
 
   return rows.map((row) => {
@@ -398,6 +519,7 @@ async function hydrateLessonPlans(
       prayerPrompts: row.prayer_prompts ?? [],
       handoutUrls: row.handout_urls ?? [],
       scriptures: mappedScriptures,
+      seriesMemberships: seriesMemberships.get(row.id) ?? [],
       publishedAt: row.published_at,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -624,6 +746,152 @@ export async function getPublishedPlanSlugs() {
   return getPublishedPlanSlugsCached();
 }
 
+async function hydrateStudySeries(
+  client: SupabaseClient,
+  rows: StudySeriesRow[],
+) {
+  if (rows.length === 0) {
+    return [] as StudySeries[];
+  }
+
+  const seriesIds = rows.map((row) => row.id);
+  const { data: lessonRows, error: lessonRowsError } = await client
+    .from("study_series_lessons")
+    .select("series_id, lesson_plan_id, position")
+    .in("series_id", seriesIds)
+    .order("position", { ascending: true });
+
+  if (isMissingStudySeriesRelationError(lessonRowsError)) {
+    return rows.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      authorId: row.author_id,
+      authorHandle: row.author_handle,
+      title: row.title,
+      summary: row.summary,
+      status: row.status,
+      lessonCount: 0,
+      lessons: [],
+      publishedAt: row.published_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  }
+
+  const typedLessonRows = (lessonRows as StudySeriesLessonRow[] | null) ?? [];
+  const lessonPlanIds = [...new Set(typedLessonRows.map((row) => row.lesson_plan_id))];
+  const lessonPlanRows =
+    lessonPlanIds.length > 0
+      ? await runLessonPlanQuery((selectClause) =>
+          client.from("lesson_plans").select(selectClause).in("id", lessonPlanIds),
+        )
+      : [];
+  const plans = await hydrateLessonPlans(client, lessonPlanRows, {
+    includeAuthorNames: false,
+    authorFallback: "Bible Study Buddy contributor",
+    includeSeriesMemberships: false,
+  });
+  const planMap = new Map(plans.map((plan) => [plan.id, plan]));
+  const lessonMap = new Map<string, StudySeries["lessons"]>();
+  const lessonCountMap = new Map<string, number>();
+
+  for (const lessonRow of typedLessonRows) {
+    lessonCountMap.set(
+      lessonRow.series_id,
+      (lessonCountMap.get(lessonRow.series_id) ?? 0) + 1,
+    );
+    const plan = planMap.get(lessonRow.lesson_plan_id);
+
+    if (!plan) {
+      continue;
+    }
+
+    const current = lessonMap.get(lessonRow.series_id) ?? [];
+    current.push({
+      lessonPlanId: lessonRow.lesson_plan_id,
+      position: lessonRow.position,
+      plan,
+    });
+    lessonMap.set(lessonRow.series_id, current);
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    authorId: row.author_id,
+    authorHandle: row.author_handle,
+    title: row.title,
+    summary: row.summary,
+    status: row.status,
+    lessonCount: lessonCountMap.get(row.id) ?? 0,
+    lessons: lessonMap.get(row.id) ?? [],
+    publishedAt: row.published_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+}
+
+const getPublishedStudySeriesBySlugCached = unstable_cache(
+  async (slug: string) => {
+    const supabase = createSupabaseStaticClient();
+
+    if (!supabase) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from("study_series")
+      .select(STUDY_SERIES_SELECT)
+      .eq("status", "published")
+      .eq("slug", slug)
+      .limit(1)
+      .maybeSingle();
+
+    if (isMissingStudySeriesRelationError(error) || !data) {
+      return null;
+    }
+
+    const [series] = await hydrateStudySeries(supabase, [data as StudySeriesRow]);
+    return series ?? null;
+  },
+  ["study-series-by-slug"],
+  { tags: [SERIES_LIST_TAG, PLAN_LIST_TAG] },
+);
+
+export async function getPublishedStudySeriesBySlug(slug: string) {
+  return getPublishedStudySeriesBySlugCached(slug);
+}
+
+const getPublishedStudySeriesSlugsCached = unstable_cache(
+  async () => {
+    const supabase = createSupabaseStaticClient();
+
+    if (!supabase) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from("study_series")
+      .select("slug")
+      .eq("status", "published")
+      .not("slug", "is", null);
+
+    if (isMissingStudySeriesRelationError(error)) {
+      return [];
+    }
+
+    return ((data as Array<{ slug: string | null }> | null) ?? [])
+      .map((row) => row.slug)
+      .filter((slug): slug is string => Boolean(slug));
+  },
+  ["published-study-series-slugs"],
+  { tags: [SERIES_LIST_TAG] },
+);
+
+export async function getPublishedStudySeriesSlugs() {
+  return getPublishedStudySeriesSlugsCached();
+}
+
 export async function getCurrentViewer() {
   const supabase = await createSupabaseServerClient();
 
@@ -701,6 +969,54 @@ export async function getDashboardPlans() {
     return query.order("updated_at", { ascending: false });
   });
   return hydrateLessonPlans(supabase, data);
+}
+
+export async function getStudySeriesById(id: string) {
+  const supabase = await createSupabaseServerClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("study_series")
+    .select(STUDY_SERIES_SELECT)
+    .eq("id", id)
+    .limit(1)
+    .maybeSingle();
+
+  if (isMissingStudySeriesRelationError(error) || !data) {
+    return null;
+  }
+
+  const [series] = await hydrateStudySeries(supabase, [data as StudySeriesRow]);
+  return series ?? null;
+}
+
+export async function getDashboardStudySeries() {
+  const viewer = await getCurrentViewer();
+  const supabase = await createSupabaseServerClient();
+
+  if (!viewer || !supabase) {
+    return [];
+  }
+
+  let query = supabase
+    .from("study_series")
+    .select(STUDY_SERIES_SELECT)
+    .order("updated_at", { ascending: false });
+
+  if (viewer.role !== "admin") {
+    query = query.eq("author_id", viewer.userId);
+  }
+
+  const { data, error } = await query;
+
+  if (isMissingStudySeriesRelationError(error)) {
+    return [];
+  }
+
+  return hydrateStudySeries(supabase, (data as StudySeriesRow[] | null) ?? []);
 }
 
 export async function getSavedPlans() {
@@ -804,4 +1120,8 @@ export function formatDate(value: string | null) {
 
 export function buildCanonicalUrl(slug: string) {
   return `${env.siteUrl}/plans/${slug}`;
+}
+
+export function buildStudySeriesCanonicalUrl(slug: string) {
+  return `${env.siteUrl}${studySeriesPath(slug)}`;
 }

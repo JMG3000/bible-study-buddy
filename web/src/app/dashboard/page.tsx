@@ -3,7 +3,11 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { PlanCard } from "@/components/plan-card";
 import { isSupabaseConfigured } from "@/lib/env";
-import { getCurrentViewer, getDashboardPlans } from "@/lib/lesson-plans";
+import {
+  getCurrentViewer,
+  getDashboardPlans,
+  getDashboardStudySeries,
+} from "@/lib/lesson-plans";
 import { signOutAction } from "@/app/login/actions";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -34,6 +38,7 @@ export default async function DashboardPage({
     getDashboardPlans(),
     searchParams,
   ]);
+  const series = viewer ? await getDashboardStudySeries() : [];
   const supabaseReady = isSupabaseConfigured();
   const created = readValue(resolvedParams, "created") === "1";
 
@@ -64,6 +69,9 @@ export default async function DashboardPage({
             </Link>
             <Link href="/create" className="button">
               New draft
+            </Link>
+            <Link href="/dashboard/series/create" className="button-secondary">
+              New series
             </Link>
             {viewer ? (
               <form action={signOutAction}>
@@ -107,18 +115,76 @@ export default async function DashboardPage({
               </div>
             </section>
 
-            {plans.length > 0 ? (
-              <div className="card-grid">
-                {plans.map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} />
-                ))}
+            <section className="stack">
+              <div className="section-head">
+                <div className="stack-sm">
+                  <span className="eyebrow">Study series</span>
+                  <h2 className="section-title">Ordered lesson playlists</h2>
+                </div>
+                <Link href="/dashboard/series/create" className="button-tertiary">
+                  Create a series
+                </Link>
               </div>
-            ) : (
-              <EmptyState
-                title="No lesson plans for this account yet"
-                description="Create your first draft after signing in to start building your lesson library."
-              />
-            )}
+
+              {series.length > 0 ? (
+                <div className="three-column">
+                  {series.map((entry) => (
+                    <article key={entry.id} className="surface-card stack-sm">
+                      <div className="meta-row">
+                        <span className={`status-pill ${entry.status}`}>{entry.status}</span>
+                        <span>{entry.lessonCount} parts</span>
+                      </div>
+
+                      <div className="stack-sm">
+                        <h3 className="card-title">{entry.title}</h3>
+                        <p className="body-copy">{entry.summary}</p>
+                      </div>
+
+                      <div className="inline-actions">
+                        <Link
+                          href={`/dashboard/series/${entry.id}`}
+                          className="button-tertiary"
+                        >
+                          Open series
+                        </Link>
+                        {entry.slug ? (
+                          <Link href={`/series/${entry.slug}`} className="button-tertiary">
+                            View public series
+                          </Link>
+                        ) : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="No study series yet"
+                  description="Create a series when you want to group standalone lessons into a clear multi-part path."
+                />
+              )}
+            </section>
+
+            <section className="stack">
+              <div className="section-head">
+                <div className="stack-sm">
+                  <span className="eyebrow">Standalone lessons</span>
+                  <h2 className="section-title">Your lesson library</h2>
+                </div>
+              </div>
+
+              {plans.length > 0 ? (
+                <div className="card-grid">
+                  {plans.map((plan) => (
+                    <PlanCard key={plan.id} plan={plan} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="No lesson plans for this account yet"
+                  description="Create your first draft after signing in to start building your lesson library."
+                />
+              )}
+            </section>
           </>
         ) : (
           <EmptyState

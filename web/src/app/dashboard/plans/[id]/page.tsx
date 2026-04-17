@@ -163,6 +163,22 @@ export default async function DashboardPlanPage({
                 before publication. In-place editing, favorites, and reporting
                 remain the next product layers after this publish flow settles.
               </p>
+              {plan.seriesMemberships.length > 0 ? (
+                <div className="stack-sm">
+                  <strong>Included in study series</strong>
+                  <div className="stack">
+                    {plan.seriesMemberships.map((membership) => (
+                      <Link
+                        key={`${membership.seriesId}-${membership.position}`}
+                        href={`/dashboard/series/${membership.seriesId}`}
+                        className="inline-link"
+                      >
+                        Part {membership.position} of {membership.seriesTitle}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div className="tag-list">
                 {[...new Set([...plan.topicTags, ...plan.customTags])].map((tag) => (
                   <span key={tag} className="chip-muted">

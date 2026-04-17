@@ -21,6 +21,11 @@ export function PlanCard({ plan }: { plan: LessonPlan }) {
       <div className="stack-sm">
         <h3 className="plan-card-title">{plan.title}</h3>
         <p className="plan-card-summary">{plan.summary}</p>
+        {plan.status === "published" && plan.seriesMemberships.length > 0 ? (
+          <span className="meta-text">
+            Part {plan.seriesMemberships[0].position} of {plan.seriesMemberships[0].seriesTitle}
+          </span>
+        ) : null}
       </div>
 
       <div className="tag-list">

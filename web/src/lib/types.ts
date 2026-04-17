@@ -23,6 +23,13 @@ export interface ScriptureRef {
   displayLabel: string;
 }
 
+export interface StudySeriesMembership {
+  seriesId: string;
+  seriesSlug: string | null;
+  seriesTitle: string;
+  position: number;
+}
+
 export interface LessonPlan {
   id: string;
   slug: string | null;
@@ -49,10 +56,32 @@ export interface LessonPlan {
   prayerPrompts: string[];
   handoutUrls: string[];
   scriptures: ScriptureRef[];
+  seriesMemberships: StudySeriesMembership[];
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
   featured?: boolean;
+}
+
+export interface StudySeriesLesson {
+  lessonPlanId: string;
+  position: number;
+  plan: LessonPlan;
+}
+
+export interface StudySeries {
+  id: string;
+  slug: string | null;
+  authorId: string;
+  authorHandle: string | null;
+  title: string;
+  summary: string;
+  status: LessonPlanStatus;
+  lessonCount: number;
+  lessons: StudySeriesLesson[];
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Report {

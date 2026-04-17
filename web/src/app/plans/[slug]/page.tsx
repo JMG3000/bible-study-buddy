@@ -90,6 +90,36 @@ export default async function LessonPlanDetailPage({ params }: PageProps) {
           ) : null}
         </div>
 
+        {plan.seriesMemberships.length > 0 ? (
+          <div className="surface-card no-print stack-sm">
+            <span className="eyebrow">Part of a Study Series</span>
+            <div className="stack-sm">
+              {plan.seriesMemberships.map((membership) =>
+                membership.seriesSlug ? (
+                  <Link
+                    key={`${membership.seriesId}-${membership.position}`}
+                    href={`/series/${membership.seriesSlug}`}
+                    className="inline-link"
+                  >
+                    Part {membership.position} of {membership.seriesTitle}
+                  </Link>
+                ) : (
+                  <span
+                    key={`${membership.seriesId}-${membership.position}`}
+                    className="meta-text"
+                  >
+                    Part {membership.position} of {membership.seriesTitle}
+                  </span>
+                ),
+              )}
+            </div>
+            <p className="body-copy">
+              This lesson still stands on its own, but it can also be taught as
+              one part of a larger multi-session path.
+            </p>
+          </div>
+        ) : null}
+
         <div className="detail-grid">
           <div className="detail-main">
             <script

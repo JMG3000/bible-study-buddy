@@ -302,6 +302,11 @@ img {
   gap: 0.8rem;
 }
 
+.stack-xs {
+  display: grid;
+  gap: 0.4rem;
+}
+
 .stats-grid,
 .card-grid,
 .two-column,
@@ -312,6 +317,32 @@ img {
 .editor-grid {
   display: grid;
   gap: 1.25rem;
+}
+
+.series-lesson-row,
+.series-sequence-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 252, 247, 0.82);
+}
+
+.series-lesson-row {
+  grid-template-columns: minmax(0, 1fr) 110px;
+  align-items: start;
+}
+
+.series-lesson-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: start;
+}
+
+.series-position-field {
+  align-content: start;
 }
 
 .stats-grid {
@@ -704,6 +735,10 @@ img {
 
   .site-nav {
     gap: 0.5rem 1rem;
+  }
+
+  .series-lesson-row {
+    grid-template-columns: 1fr;
   }
 
   .hero {

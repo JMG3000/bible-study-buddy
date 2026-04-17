@@ -70,6 +70,7 @@ export default async function HomePage() {
                       <span className="chip">Structured drafting</span>
                       <span className="chip">Printable lessons</span>
                       <span className="chip">Shareable public pages</span>
+                      <span className="chip">Study series playlists</span>
                       <span className="chip">Creator dashboard</span>
                     </div>
                   </div>
@@ -126,11 +127,11 @@ export default async function HomePage() {
 
           <div className="three-column">
             <div className="surface-card">
-              <span className="chip-muted">1. Publishing</span>
-              <h3 className="card-title">Move drafts into the public catalog</h3>
+              <span className="chip-muted">1. Study Series</span>
+              <h3 className="card-title">Guide people through multi-part journeys</h3>
               <p className="body-copy">
-                Finish the publish flow so creators can send ready lessons live
-                and immediately share them with the wider community.
+                Let creators bundle standalone lessons into a clear sequence
+                without sacrificing individual lesson discovery or usefulness.
               </p>
             </div>
             <div className="surface-card">
