@@ -57,12 +57,9 @@ export async function signInWithOAuthAction(formData: FormData) {
     provider: provider as OAuthProvider,
     options: {
       redirectTo: `${env.siteUrl}/auth/callback`,
-      queryParams:
-        provider === "google"
-          ? {
-              prompt: "select_account",
-            }
-          : undefined,
+      queryParams: {
+        prompt: "select_account",
+      },
     },
   });
 
