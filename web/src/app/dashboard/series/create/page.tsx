@@ -21,6 +21,29 @@ function readValue(
   return Array.isArray(value) ? value[0] : value ?? "";
 }
 
+function readSelectedLessons(value: string) {
+  return new Set(
+    value
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean),
+  );
+}
+
+function readPositions(value: string) {
+  const positions = new Map<string, string>();
+
+  for (const entry of value.split("|")) {
+    const [lessonId, position] = entry.split(":");
+
+    if (lessonId && position) {
+      positions.set(lessonId, position);
+    }
+  }
+
+  return positions;
+}
+
 export default async function CreateStudySeriesPage({
   searchParams,
 }: {
@@ -32,6 +55,10 @@ export default async function CreateStudySeriesPage({
     searchParams,
   ]);
   const error = readValue(resolvedSearchParams, "error");
+  const title = readValue(resolvedSearchParams, "title");
+  const summary = readValue(resolvedSearchParams, "summary");
+  const selectedLessons = readSelectedLessons(readValue(resolvedSearchParams, "lessons"));
+  const positions = readPositions(readValue(resolvedSearchParams, "positions"));
 
   if (!viewer) {
     redirect("/login");
@@ -78,6 +105,7 @@ export default async function CreateStudySeriesPage({
                   name="title"
                   className="input"
                   placeholder="Foundations of Christian Community"
+                  defaultValue={title}
                   required
                 />
               </div>
@@ -89,6 +117,7 @@ export default async function CreateStudySeriesPage({
                   name="summary"
                   className="textarea"
                   placeholder="Describe the overall journey and what learners should gain across the full sequence."
+                  defaultValue={summary}
                   required
                 />
               </div>
@@ -113,7 +142,12 @@ export default async function CreateStudySeriesPage({
                 {plans.map((plan, index) => (
                   <label key={plan.id} className="series-lesson-row">
                     <div className="series-lesson-main">
-                      <input type="checkbox" name="lessonIds" value={plan.id} />
+                      <input
+                        type="checkbox"
+                        name="lessonIds"
+                        value={plan.id}
+                        defaultChecked={selectedLessons.has(plan.id)}
+                      />
                       <div className="stack-xs">
                         <strong>{plan.title}</strong>
                         <span className="meta-text">
@@ -131,7 +165,7 @@ export default async function CreateStudySeriesPage({
                         type="number"
                         min="1"
                         className="input"
-                        defaultValue={index + 1}
+                        defaultValue={positions.get(plan.id) ?? String(index + 1)}
                       />
                     </div>
                   </label>

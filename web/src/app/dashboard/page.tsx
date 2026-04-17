@@ -8,7 +8,6 @@ import {
   getDashboardPlans,
   getDashboardStudySeries,
 } from "@/lib/lesson-plans";
-import { signOutAction } from "@/app/login/actions";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -61,25 +60,12 @@ export default async function DashboardPage({
           </div>
 
           <div className="inline-actions">
-            <Link href="/" className="button-tertiary">
-              Home
-            </Link>
-            <Link href="/plans" className="button-tertiary">
-              Browse plans
-            </Link>
             <Link href="/create" className="button">
               New draft
             </Link>
             <Link href="/dashboard/series/create" className="button-secondary">
               New series
             </Link>
-            {viewer ? (
-              <form action={signOutAction}>
-                <button type="submit" className="button-secondary">
-                  Sign out
-                </button>
-              </form>
-            ) : null}
           </div>
         </div>
 
@@ -170,6 +156,9 @@ export default async function DashboardPage({
                   <span className="eyebrow">Standalone lessons</span>
                   <h2 className="section-title">Your lesson library</h2>
                 </div>
+                <Link href="/create" className="button-tertiary">
+                  Create a lesson
+                </Link>
               </div>
 
               {plans.length > 0 ? (

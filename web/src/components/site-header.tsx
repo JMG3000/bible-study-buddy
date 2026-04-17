@@ -24,7 +24,7 @@ export async function SiteHeader() {
 
         <nav className="site-nav" aria-label="Primary navigation">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href}>
+            <Link key={link.href} href={link.href} className="button-tertiary site-nav-link">
               {link.label}
             </Link>
           ))}

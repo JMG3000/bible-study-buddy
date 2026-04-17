@@ -21,6 +21,41 @@ function buildSeriesCreateRedirect(message: string) {
   return appendMessage("/dashboard/series/create", "error", message);
 }
 
+type SeriesDraftSnapshot = {
+  title: string;
+  summary: string;
+  selectedLessons: Array<{
+    lessonPlanId: string;
+    position: number;
+  }>;
+};
+
+function encodeSeriesDraftSnapshot(snapshot: SeriesDraftSnapshot) {
+  return {
+    title: snapshot.title,
+    summary: snapshot.summary,
+    lessons: snapshot.selectedLessons.map((lesson) => lesson.lessonPlanId).join(","),
+    positions: snapshot.selectedLessons
+      .map((lesson) => `${lesson.lessonPlanId}:${lesson.position}`)
+      .join("|"),
+  };
+}
+
+function buildSeriesCreateRedirectWithState(
+  message: string,
+  snapshot: SeriesDraftSnapshot,
+) {
+  let path = buildSeriesCreateRedirect(message);
+
+  for (const [key, value] of Object.entries(encodeSeriesDraftSnapshot(snapshot))) {
+    if (value) {
+      path = appendMessage(path, key, value);
+    }
+  }
+
+  return path;
+}
+
 function isMissingStudySeriesRelationError(error: {
   code?: string;
   message?: string;
@@ -50,6 +85,14 @@ function parseSelectedLessons(formData: FormData) {
       position: rawPosition,
     };
   });
+}
+
+function readSeriesDraftSnapshot(formData: FormData): SeriesDraftSnapshot {
+  return {
+    title: String(formData.get("title") ?? "").trim(),
+    summary: String(formData.get("summary") ?? "").trim(),
+    selectedLessons: parseSelectedLessons(formData),
+  };
 }
 
 async function resolveUniqueSeriesSlug(title: string, seriesId: string) {
@@ -92,17 +135,24 @@ export async function createStudySeriesAction(formData: FormData) {
     redirect("/login");
   }
 
-  const title = String(formData.get("title") ?? "").trim();
-  const summary = String(formData.get("summary") ?? "").trim();
-  const selectedLessons = parseSelectedLessons(formData);
+  const snapshot = readSeriesDraftSnapshot(formData);
+  const { title, summary, selectedLessons } = snapshot;
 
   if (!title || !summary) {
-    redirect(buildSeriesCreateRedirect("Add a series title and summary before saving."));
+    redirect(
+      buildSeriesCreateRedirectWithState(
+        "Add a series title and summary before saving.",
+        snapshot,
+      ),
+    );
   }
 
   if (selectedLessons.length < 2) {
     redirect(
-      buildSeriesCreateRedirect("Select at least two lessons to build a study series."),
+      buildSeriesCreateRedirectWithState(
+        "Select at least two lessons to build a study series.",
+        snapshot,
+      ),
     );
   }
 
@@ -112,7 +162,10 @@ export async function createStudySeriesAction(formData: FormData) {
     )
   ) {
     redirect(
-      buildSeriesCreateRedirect("Give each selected lesson a valid sequence number."),
+      buildSeriesCreateRedirectWithState(
+        "Give each selected lesson a valid sequence number.",
+        snapshot,
+      ),
     );
   }
 
@@ -129,7 +182,10 @@ export async function createStudySeriesAction(formData: FormData) {
 
   if (duplicatePositions.size > 0) {
     redirect(
-      buildSeriesCreateRedirect("Each lesson in a series needs its own unique step number."),
+      buildSeriesCreateRedirectWithState(
+        "Each lesson in a series needs its own unique step number.",
+        snapshot,
+      ),
     );
   }
 
@@ -141,13 +197,14 @@ export async function createStudySeriesAction(formData: FormData) {
     .eq("author_id", user.id);
 
   if (lessonError) {
-    redirect(buildSeriesCreateRedirect(lessonError.message));
+    redirect(buildSeriesCreateRedirectWithState(lessonError.message, snapshot));
   }
 
   if (((ownedLessons as Array<{ id: string }> | null) ?? []).length !== lessonIds.length) {
     redirect(
-      buildSeriesCreateRedirect(
+      buildSeriesCreateRedirectWithState(
         "A study series can only include lessons that belong to your account.",
+        snapshot,
       ),
     );
   }
@@ -165,10 +222,11 @@ export async function createStudySeriesAction(formData: FormData) {
 
   if (seriesError || !insertedSeries) {
     redirect(
-      buildSeriesCreateRedirect(
+      buildSeriesCreateRedirectWithState(
         isMissingStudySeriesRelationError(seriesError)
           ? "Run the 0007_add_study_series.sql migration in Supabase, then save your series again."
           : seriesError?.message ?? "Unable to create a study series draft.",
+        snapshot,
       ),
     );
   }
@@ -184,8 +242,9 @@ export async function createStudySeriesAction(formData: FormData) {
   if (membershipError) {
     await supabase.from("study_series").delete().eq("id", insertedSeries.id);
     redirect(
-      buildSeriesCreateRedirect(
+      buildSeriesCreateRedirectWithState(
         membershipError.message ?? "We created the series shell, but could not attach the lessons.",
+        snapshot,
       ),
     );
   }
