@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { canReviewReportsRole, getCurrentViewer } from "@/lib/lesson-plans";
+import {
+  canManageUsersRole,
+  canReviewReportsRole,
+  getCurrentViewer,
+} from "@/lib/lesson-plans";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ReportStatus } from "@/lib/types";
 import { appendMessage, sanitizeNextPath } from "@/lib/urls";
@@ -146,7 +150,7 @@ function canViewerModerateContext(
     return false;
   }
 
-  if (viewer.role === "admin") {
+  if (canManageUsersRole(viewer.role)) {
     return true;
   }
 
@@ -327,7 +331,8 @@ export async function postReviewThreadMessageAction(formData: FormData) {
 
   const canPostAsReviewer =
     canReviewReportsRole(viewer.role) &&
-    (viewer.role === "admin" || context.thread.reviewer_id === viewer.userId);
+    (canManageUsersRole(viewer.role) ||
+      context.thread.reviewer_id === viewer.userId);
   const canPostAsCreator = context.thread.creator_id === viewer.userId;
 
   if (!canPostAsReviewer && !canPostAsCreator) {

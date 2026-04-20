@@ -1,6 +1,12 @@
 create extension if not exists pgcrypto;
 
-create type public.user_role as enum ('user', 'creator', 'admin');
+create type public.user_role as enum (
+  'user',
+  'creator',
+  'reviewer',
+  'admin',
+  'webmaster_supreme'
+);
 create type public.lesson_plan_status as enum ('draft', 'published', 'unpublished');
 create type public.moderation_state as enum ('none', 'under_review', 'actioned');
 create type public.report_status as enum ('open', 'reviewing', 'resolved', 'dismissed');
@@ -179,7 +185,13 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce(public.current_profile_role() = 'admin', false)
+  select coalesce(
+    public.current_profile_role() in (
+      'admin'::public.user_role,
+      'webmaster_supreme'::public.user_role
+    ),
+    false
+  )
 $$;
 
 create or replace function public.handle_new_user()

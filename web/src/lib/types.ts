@@ -1,4 +1,9 @@
-export type UserRole = "user" | "creator" | "reviewer" | "admin";
+export type UserRole =
+  | "user"
+  | "creator"
+  | "reviewer"
+  | "admin"
+  | "webmaster_supreme";
 export type LessonPlanStatus = "draft" | "published" | "unpublished";
 export type ModerationState = "none" | "under_review" | "actioned";
 export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";

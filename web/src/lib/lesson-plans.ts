@@ -134,8 +134,20 @@ export interface ViewerContext {
   role: UserRole;
 }
 
+export function isWebmasterSupremeRole(role: UserRole | null | undefined) {
+  return role === "webmaster_supreme";
+}
+
+export function canManageUsersRole(role: UserRole | null | undefined) {
+  return role === "admin" || role === "webmaster_supreme";
+}
+
 export function canReviewReportsRole(role: UserRole | null | undefined) {
-  return role === "admin" || role === "reviewer";
+  return (
+    role === "admin" ||
+    role === "reviewer" ||
+    role === "webmaster_supreme"
+  );
 }
 
 function normalizeHandleQuery(value: string) {
@@ -1010,7 +1022,7 @@ export async function getDashboardPlans() {
   const data = await runLessonPlanQuery((selectClause) => {
     let query = supabase.from("lesson_plans").select(selectClause);
 
-    if (viewer.role !== "admin") {
+    if (!canManageUsersRole(viewer.role)) {
       query = query.eq("author_id", viewer.userId);
     }
 
@@ -1054,7 +1066,7 @@ export async function getDashboardStudySeries() {
     .select(STUDY_SERIES_SELECT)
     .order("updated_at", { ascending: false });
 
-  if (viewer.role !== "admin") {
+  if (!canManageUsersRole(viewer.role)) {
     query = query.eq("author_id", viewer.userId);
   }
 
@@ -1275,17 +1287,18 @@ interface AdminReportMetricRow {
 }
 
 const ROLE_SORT_ORDER: Record<UserRole, number> = {
-  admin: 0,
-  reviewer: 1,
-  creator: 2,
-  user: 3,
+  webmaster_supreme: 0,
+  admin: 1,
+  reviewer: 2,
+  creator: 3,
+  user: 4,
 };
 
 export async function getAdminUserSummaries(): Promise<AdminUserSummary[]> {
   const viewer = await getCurrentViewer();
   const supabase = await createSupabaseServerClient();
 
-  if (!viewer || viewer.role !== "admin" || !supabase) {
+  if (!viewer || !canManageUsersRole(viewer.role) || !supabase) {
     return [];
   }
 

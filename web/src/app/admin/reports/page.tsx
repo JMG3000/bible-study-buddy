@@ -3,6 +3,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { isSupabaseConfigured } from "@/lib/env";
 import {
+  canManageUsersRole,
   canReviewReportsRole,
   getCurrentViewer,
   getOpenReports,
@@ -37,7 +38,7 @@ export default async function ReportsPage({
     searchParams,
   ]);
   const supabaseReady = isSupabaseConfigured();
-  const isAdmin = viewer?.role === "admin";
+  const canManageUsers = viewer ? canManageUsersRole(viewer.role) : false;
   const canReview = viewer ? canReviewReportsRole(viewer.role) : false;
   const updated = readValue(resolvedParams, "updated");
   const error = readValue(resolvedParams, "error");
@@ -56,7 +57,7 @@ export default async function ReportsPage({
             </p>
           </div>
 
-          {isAdmin ? (
+          {canManageUsers ? (
             <div className="inline-actions">
               <Link href="/admin/users" className="button-secondary">
                 Manage users

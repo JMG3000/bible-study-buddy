@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { signOutAction } from "@/app/login/actions";
-import { getCurrentViewer } from "@/lib/lesson-plans";
+import { canReviewReportsRole, getCurrentViewer } from "@/lib/lesson-plans";
 
 export async function SiteHeader() {
   const viewer = await getCurrentViewer();
   const navLinks = [
     { href: "/plans", label: "Browse" },
     { href: "/dashboard", label: "Dashboard" },
-    ...(viewer && (viewer.role === "admin" || viewer.role === "reviewer")
+    ...(viewer && canReviewReportsRole(viewer.role)
       ? [{ href: "/admin/reports", label: "Reports" }]
       : []),
   ];

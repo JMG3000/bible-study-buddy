@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCurrentViewer, getStudySeriesById } from "@/lib/lesson-plans";
+import {
+  canManageUsersRole,
+  getCurrentViewer,
+  getStudySeriesById,
+} from "@/lib/lesson-plans";
 import { publishStudySeriesAction } from "../actions";
 
 type PageProps = {
@@ -48,7 +52,7 @@ export default async function DashboardStudySeriesPage({
     notFound();
   }
 
-  if (!viewer || (viewer.role !== "admin" && viewer.userId !== series.authorId)) {
+  if (!viewer || (!canManageUsersRole(viewer.role) && viewer.userId !== series.authorId)) {
     notFound();
   }
 

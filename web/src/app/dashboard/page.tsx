@@ -5,6 +5,7 @@ import { PlanCard } from "@/components/plan-card";
 import { isSupabaseConfigured } from "@/lib/env";
 import {
   canReviewReportsRole,
+  canManageUsersRole,
   getCreatorActiveReviewThreads,
   getCurrentViewer,
   getDashboardPlans,
@@ -110,7 +111,9 @@ export default async function DashboardPage({
               <section className="surface-card stack-sm">
                 <div className="stack-sm">
                   <h2 className="section-title">
-                    {viewer.role === "admin" ? "Admin tools" : "Reviewer tools"}
+                    {canManageUsersRole(viewer.role)
+                      ? "Staff tools"
+                      : "Reviewer tools"}
                   </h2>
                   <p className="body-copy">
                     Review reported lessons without leaving the app.
@@ -121,7 +124,7 @@ export default async function DashboardPage({
                   <Link href="/admin/reports" className="button-secondary">
                     Open moderation queue
                   </Link>
-                  {viewer.role === "admin" ? (
+                  {canManageUsersRole(viewer.role) ? (
                     <Link href="/admin/users" className="button-secondary">
                       Manage users
                     </Link>

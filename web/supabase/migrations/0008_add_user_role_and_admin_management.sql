@@ -11,12 +11,42 @@ begin
 end
 $$;
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_enum
+    where enumlabel = 'reviewer'
+      and enumtypid = 'public.user_role'::regtype
+  ) then
+    alter type public.user_role add value 'reviewer';
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_enum
+    where enumlabel = 'webmaster_supreme'
+      and enumtypid = 'public.user_role'::regtype
+  ) then
+    alter type public.user_role add value 'webmaster_supreme';
+  end if;
+end
+$$;
+
 alter table public.profiles
 alter column role set default 'user';
 
 update public.profiles p
 set role = case
-  when p.role = 'admin' then 'admin'::public.user_role
+  when p.role in (
+    'admin'::public.user_role,
+    'reviewer'::public.user_role,
+    'webmaster_supreme'::public.user_role
+  ) then p.role
   when exists (
     select 1
     from public.lesson_plans lp
@@ -65,7 +95,11 @@ begin
     else 'user'::public.user_role
   end
   where p.user_id = target_user_id
-    and p.role <> 'admin';
+    and p.role not in (
+      'admin'::public.user_role,
+      'reviewer'::public.user_role,
+      'webmaster_supreme'::public.user_role
+    );
 
   return null;
 end;

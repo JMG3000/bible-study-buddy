@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/env";
-import { getCurrentViewer, getLessonPlanById } from "@/lib/lesson-plans";
+import {
+  canManageUsersRole,
+  getCurrentViewer,
+  getLessonPlanById,
+} from "@/lib/lesson-plans";
 import { publishLessonAction } from "./actions";
 
 type PageProps = {
@@ -40,7 +44,7 @@ export default async function DashboardPlanPage({
     notFound();
   }
 
-  if (!viewer || (viewer.role !== "admin" && viewer.userId !== plan.authorId)) {
+  if (!viewer || (!canManageUsersRole(viewer.role) && viewer.userId !== plan.authorId)) {
     notFound();
   }
 

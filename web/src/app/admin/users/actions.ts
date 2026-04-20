@@ -3,8 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { UserRole } from "@/lib/types";
-import { getCurrentViewer } from "@/lib/lesson-plans";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  canManageUsersRole,
+  getCurrentViewer,
+  isWebmasterSupremeRole,
+} from "@/lib/lesson-plans";
+import {
+  createSupabaseServerClient,
+  createSupabaseServiceClient,
+} from "@/lib/supabase/server";
 import { appendMessage } from "@/lib/urls";
 
 const ALLOWED_ROLES: UserRole[] = ["user", "creator", "reviewer", "admin"];
@@ -25,8 +32,13 @@ export async function updateUserRoleAction(formData: FormData) {
     redirect("/login");
   }
 
-  if (viewer.role !== "admin") {
-    redirect(buildUsersRedirect("error", "Only admins can manage account roles."));
+  if (!canManageUsersRole(viewer.role)) {
+    redirect(
+      buildUsersRedirect(
+        "error",
+        "Only admins or the Webmaster Supreme can manage account roles.",
+      ),
+    );
   }
 
   const targetUserId = String(formData.get("userId") ?? "").trim();
@@ -47,9 +59,22 @@ export async function updateUserRoleAction(formData: FormData) {
 
   const { data: targetProfile } = await supabase
     .from("profiles")
-    .select("handle")
+    .select("handle, role")
     .eq("user_id", targetUserId)
     .maybeSingle();
+
+  const typedTargetProfile = targetProfile as
+    | { handle?: string; role?: UserRole }
+    | null;
+
+  if (isWebmasterSupremeRole(typedTargetProfile?.role)) {
+    redirect(
+      buildUsersRedirect(
+        "error",
+        "Webmaster Supreme is a manual-only role and cannot be changed from this page.",
+      ),
+    );
+  }
 
   const { error } = await supabase
     .from("profiles")
@@ -69,13 +94,119 @@ export async function updateUserRoleAction(formData: FormData) {
   revalidatePath("/admin/reports");
   revalidatePath("/dashboard");
 
-  const targetHandle =
-    (targetProfile as { handle?: string } | null)?.handle ?? "That user";
+  const targetHandle = typedTargetProfile?.handle ?? "That user";
 
   redirect(
     buildUsersRedirect(
       "updated",
       `@${targetHandle} is now assigned the ${nextRole} role.`,
+    ),
+  );
+}
+
+export async function resetUserMetricsAction(formData: FormData) {
+  const viewer = await getCurrentViewer();
+  const serviceClient = createSupabaseServiceClient();
+
+  if (!viewer) {
+    redirect("/login");
+  }
+
+  if (!isWebmasterSupremeRole(viewer.role)) {
+    redirect(
+      buildUsersRedirect(
+        "error",
+        "Only the Webmaster Supreme can reset user metrics and authored content.",
+      ),
+    );
+  }
+
+  if (!serviceClient) {
+    redirect(
+      buildUsersRedirect(
+        "error",
+        "Supabase service credentials are required for metric resets.",
+      ),
+    );
+  }
+
+  const targetUserId = String(formData.get("userId") ?? "").trim();
+
+  if (!targetUserId) {
+    redirect(buildUsersRedirect("error", "Choose a valid account first."));
+  }
+
+  const { data: targetProfile } = await serviceClient
+    .from("profiles")
+    .select("handle, role")
+    .eq("user_id", targetUserId)
+    .maybeSingle();
+
+  const typedTargetProfile = targetProfile as
+    | { handle?: string; role?: UserRole }
+    | null;
+
+  if (!typedTargetProfile) {
+    redirect(buildUsersRedirect("error", "We could not find that account."));
+  }
+
+  if (
+    isWebmasterSupremeRole(typedTargetProfile.role) &&
+    targetUserId !== viewer.userId
+  ) {
+    redirect(
+      buildUsersRedirect(
+        "error",
+        "Webmaster Supreme accounts can only be reset by themselves.",
+      ),
+    );
+  }
+
+  const { data: lessonRows } = await serviceClient
+    .from("lesson_plans")
+    .select("id")
+    .eq("author_id", targetUserId);
+
+  const lessonIds = ((lessonRows as Array<{ id: string }> | null) ?? []).map(
+    (row) => row.id,
+  );
+
+  if (lessonIds.length > 0) {
+    await serviceClient
+      .from("reports")
+      .delete()
+      .in("lesson_plan_id", lessonIds);
+  }
+
+  await serviceClient
+    .from("reports")
+    .delete()
+    .eq("reporter_id", targetUserId);
+
+  await serviceClient
+    .from("study_series")
+    .delete()
+    .eq("author_id", targetUserId);
+
+  await serviceClient
+    .from("lesson_plans")
+    .delete()
+    .eq("author_id", targetUserId);
+
+  await serviceClient
+    .from("favorites")
+    .delete()
+    .eq("user_id", targetUserId);
+
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/reports");
+  revalidatePath("/dashboard");
+  revalidatePath("/plans");
+
+  redirect(
+    buildUsersRedirect(
+      "updated",
+      `Reset report metrics and cleared authored content for @${typedTargetProfile.handle ?? "user"}.`,
     ),
   );
 }
