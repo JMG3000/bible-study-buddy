@@ -36,7 +36,7 @@ function buildReviewRedirect(path: string, key: string, value: string) {
 }
 
 function buildMigrationMessage() {
-  return "Review conversations need one more setup step from the site owner.";
+  return "Review conversations are not available right now.";
 }
 
 type LoadedReviewContext = {

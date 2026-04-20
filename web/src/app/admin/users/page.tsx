@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { EmptyState } from "@/components/empty-state";
 import type { AdminUserSummary, UserRole } from "@/lib/types";
 import {
@@ -39,6 +40,14 @@ const ROLE_OPTIONS: Array<{ role: UserRole; label: string }> = [
   { role: "admin", label: "Admin" },
 ];
 
+const ROLE_DISPLAY_LEVEL: Record<UserRole, number> = {
+  user: 1,
+  creator: 2,
+  reviewer: 3,
+  admin: 4,
+  webmaster_supreme: 4,
+};
+
 function formatRoleLabel(role: UserRole) {
   switch (role) {
     case "webmaster_supreme":
@@ -56,6 +65,39 @@ function formatRoleLabel(role: UserRole) {
 
 function countRole(users: AdminUserSummary[], role: UserRole) {
   return users.filter((user) => user.role === role).length;
+}
+
+function getVisibleRoleStates(userRole: UserRole) {
+  const level = ROLE_DISPLAY_LEVEL[userRole];
+  return ROLE_OPTIONS.filter((option) => ROLE_DISPLAY_LEVEL[option.role] <= level);
+}
+
+function getManageableRoleOptions(viewerRole: UserRole, targetRole: UserRole) {
+  if (isWebmasterSupremeRole(targetRole)) {
+    return [] as typeof ROLE_OPTIONS;
+  }
+
+  const viewerLevel = ROLE_DISPLAY_LEVEL[viewerRole];
+  return ROLE_OPTIONS.filter((option) => ROLE_DISPLAY_LEVEL[option.role] <= viewerLevel);
+}
+
+function formatWebmasterActionLabel(actionKind: string, handle: string) {
+  switch (actionKind) {
+    case "clear_drafts":
+      return `Clear drafts for @${handle}?`;
+    case "clear_published_lessons":
+      return `Clear published lessons for @${handle}?`;
+    case "clear_unpublished_lessons":
+      return `Clear unpublished lessons for @${handle}?`;
+    case "clear_study_series":
+      return `Clear study series for @${handle}?`;
+    case "clear_reports_created":
+      return `Clear reports created by @${handle}?`;
+    case "clear_reports_against":
+      return `Clear reports against @${handle}?`;
+    default:
+      return `Clear saved favorites for @${handle}?`;
+  }
 }
 
 export default async function AdminUsersPage({
@@ -184,39 +226,45 @@ export default async function AdminUsersPage({
                   </div>
 
                   <div className="admin-role-actions">
-                    {isWebmasterSupremeRole(user.role)
-                      ? ROLE_OPTIONS.map((option) => (
-                          <button
-                            key={option.role}
-                            type="button"
-                            className="button"
-                          >
-                            {option.label} Now
-                          </button>
-                        ))
-                      : ROLE_OPTIONS.map((option) => {
-                          const isCurrentRole = option.role === user.role;
-                          const disableRoleChange =
-                            isCurrentRole ||
-                            (user.isCurrentViewer && option.role !== "admin");
-
-                          return (
-                            <form key={option.role} action={updateUserRoleAction}>
-                              <input type="hidden" name="userId" value={user.userId} />
-                              <input type="hidden" name="role" value={option.role} />
-                              <button
-                                type="submit"
-                                className={isCurrentRole ? "button" : "button-secondary"}
-                                disabled={disableRoleChange}
-                              >
-                                {isCurrentRole
-                                  ? `${option.label} Now`
-                                  : `Make ${option.label}`}
-                              </button>
-                            </form>
-                          );
-                        })}
+                    {getVisibleRoleStates(user.role).map((option) => (
+                      <button key={option.role} type="button" className="button">
+                        {option.label} Now
+                      </button>
+                    ))}
                   </div>
+
+                  {canManageUsers ? (
+                    <div className="admin-role-actions">
+                      {getManageableRoleOptions(viewer.role, user.role).map((option) => {
+                        const isCurrentRole = option.role === user.role;
+                        const disableRoleChange =
+                          isCurrentRole ||
+                          (user.isCurrentViewer && option.role !== "admin");
+
+                        return (
+                          <form key={option.role} action={updateUserRoleAction}>
+                            <input type="hidden" name="userId" value={user.userId} />
+                            <input type="hidden" name="role" value={option.role} />
+                            <button
+                              type="submit"
+                              className={isCurrentRole ? "button" : "button-secondary"}
+                              disabled={disableRoleChange}
+                            >
+                              {isCurrentRole
+                                ? `${option.label} Now`
+                                : `Make ${option.label}`}
+                            </button>
+                          </form>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+
+                  {isWebmasterSupremeRole(user.role) ? (
+                    <p className="meta-text">
+                      Webmaster Supreme sits above the standard role ladder and is assigned manually.
+                    </p>
+                  ) : null}
 
                   {isWebmaster ? (
                     <section className="subtle-panel stack-sm">
@@ -232,9 +280,13 @@ export default async function AdminUsersPage({
                         <form action={runWebmasterControlAction}>
                           <input type="hidden" name="userId" value={user.userId} />
                           <input type="hidden" name="actionKind" value="clear_drafts" />
-                          <button type="submit" className="button-secondary">
+                          <ConfirmSubmitButton
+                            type="submit"
+                            className="button-secondary"
+                            confirmMessage={formatWebmasterActionLabel("clear_drafts", user.handle)}
+                          >
                             Clear drafts
-                          </button>
+                          </ConfirmSubmitButton>
                         </form>
                         <form action={runWebmasterControlAction}>
                           <input type="hidden" name="userId" value={user.userId} />
@@ -243,9 +295,16 @@ export default async function AdminUsersPage({
                             name="actionKind"
                             value="clear_published_lessons"
                           />
-                          <button type="submit" className="button-secondary">
+                          <ConfirmSubmitButton
+                            type="submit"
+                            className="button-secondary"
+                            confirmMessage={formatWebmasterActionLabel(
+                              "clear_published_lessons",
+                              user.handle,
+                            )}
+                          >
                             Clear published
-                          </button>
+                          </ConfirmSubmitButton>
                         </form>
                         <form action={runWebmasterControlAction}>
                           <input type="hidden" name="userId" value={user.userId} />
@@ -254,16 +313,30 @@ export default async function AdminUsersPage({
                             name="actionKind"
                             value="clear_unpublished_lessons"
                           />
-                          <button type="submit" className="button-secondary">
+                          <ConfirmSubmitButton
+                            type="submit"
+                            className="button-secondary"
+                            confirmMessage={formatWebmasterActionLabel(
+                              "clear_unpublished_lessons",
+                              user.handle,
+                            )}
+                          >
                             Clear unpublished
-                          </button>
+                          </ConfirmSubmitButton>
                         </form>
                         <form action={runWebmasterControlAction}>
                           <input type="hidden" name="userId" value={user.userId} />
                           <input type="hidden" name="actionKind" value="clear_study_series" />
-                          <button type="submit" className="button-secondary">
+                          <ConfirmSubmitButton
+                            type="submit"
+                            className="button-secondary"
+                            confirmMessage={formatWebmasterActionLabel(
+                              "clear_study_series",
+                              user.handle,
+                            )}
+                          >
                             Clear series
-                          </button>
+                          </ConfirmSubmitButton>
                         </form>
                         <form action={runWebmasterControlAction}>
                           <input type="hidden" name="userId" value={user.userId} />
@@ -272,9 +345,16 @@ export default async function AdminUsersPage({
                             name="actionKind"
                             value="clear_reports_created"
                           />
-                          <button type="submit" className="button-secondary">
+                          <ConfirmSubmitButton
+                            type="submit"
+                            className="button-secondary"
+                            confirmMessage={formatWebmasterActionLabel(
+                              "clear_reports_created",
+                              user.handle,
+                            )}
+                          >
                             Clear reports created
-                          </button>
+                          </ConfirmSubmitButton>
                         </form>
                         <form action={runWebmasterControlAction}>
                           <input type="hidden" name="userId" value={user.userId} />
@@ -283,9 +363,16 @@ export default async function AdminUsersPage({
                             name="actionKind"
                             value="clear_reports_against"
                           />
-                          <button type="submit" className="button-secondary">
+                          <ConfirmSubmitButton
+                            type="submit"
+                            className="button-secondary"
+                            confirmMessage={formatWebmasterActionLabel(
+                              "clear_reports_against",
+                              user.handle,
+                            )}
+                          >
                             Clear reports against
-                          </button>
+                          </ConfirmSubmitButton>
                         </form>
                         <form action={runWebmasterControlAction}>
                           <input type="hidden" name="userId" value={user.userId} />
@@ -294,9 +381,16 @@ export default async function AdminUsersPage({
                             name="actionKind"
                             value="clear_saved_favorites"
                           />
-                          <button type="submit" className="button-secondary">
+                          <ConfirmSubmitButton
+                            type="submit"
+                            className="button-secondary"
+                            confirmMessage={formatWebmasterActionLabel(
+                              "clear_saved_favorites",
+                              user.handle,
+                            )}
+                          >
                             Clear favorites
-                          </button>
+                          </ConfirmSubmitButton>
                         </form>
                       </div>
                     </section>

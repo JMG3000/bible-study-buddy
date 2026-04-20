@@ -21,7 +21,7 @@ export async function SiteHeader() {
           </span>
           <span className="brand-copy">
             <strong>Bible Study Buddy: Free</strong>
-            <span>Structured lessons for small groups and classrooms</span>
+            <span>Structured lessons for small groups or big rooms</span>
           </span>
         </Link>
 

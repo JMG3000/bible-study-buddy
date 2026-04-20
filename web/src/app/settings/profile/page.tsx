@@ -47,7 +47,7 @@ export default async function ProfileSettingsPage({
       <div className="shell stack">
         <div className="section-head">
           <div className="stack-sm">
-            <span className="eyebrow">Profile settings</span>
+            <span className="eyebrow">Profile Settings</span>
             <h1 className="page-title">Creator identity</h1>
             <p className="lead">
               Keep one stable public username for search and one screen name for

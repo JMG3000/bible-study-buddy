@@ -54,9 +54,7 @@ export default async function CreatePage({
           <span className="eyebrow">Authoring surface</span>
           <h1 className="page-title">Structured lesson editor</h1>
           <p className="lead">
-            Signed-in creators can build a draft lesson with guided teaching
-            fields, a scripture selector, and custom tags that make the lesson
-            easier to find later.
+            Start lean, save early, and fill in the rest as the lesson takes shape.
           </p>
         </div>
 
@@ -73,6 +71,13 @@ export default async function CreatePage({
 
         <form action={createLessonDraftAction} className="editor-grid">
           <section className="editor-card stack">
+            <div className="stack-xs">
+              <h2 className="section-title">Core lesson details</h2>
+              <p className="body-copy">
+                Keep these anchor fields in place for every draft, then return and refine them as needed.
+              </p>
+            </div>
+
             <div className="field">
               <label htmlFor="title">Lesson title</label>
               <input
@@ -80,7 +85,6 @@ export default async function CreatePage({
                 name="title"
                 className="input"
                 placeholder="Walking in Community"
-                required
               />
             </div>
 
@@ -91,7 +95,6 @@ export default async function CreatePage({
                 name="summary"
                 className="textarea"
                 placeholder="A concise overview that will appear in the public catalog and SEO metadata."
-                required
               />
             </div>
 
@@ -102,7 +105,6 @@ export default async function CreatePage({
                 name="teachingObjective"
                 className="textarea"
                 placeholder="Describe the change, understanding, or response this lesson is designed to produce."
-                required
               />
             </div>
 
@@ -117,7 +119,6 @@ export default async function CreatePage({
                   max="480"
                   className="input"
                   defaultValue="45"
-                  required
                 />
               </div>
               <div className="field">
@@ -132,16 +133,6 @@ export default async function CreatePage({
             </div>
 
             <div className="field">
-              <label htmlFor="icebreaker">Icebreaker</label>
-              <textarea
-                id="icebreaker"
-                name="icebreaker"
-                className="textarea"
-                placeholder="Optional discussion starter or warm-up prompt"
-              />
-            </div>
-
-            <div className="field">
               <label htmlFor="facilitatorNotes">Facilitator notes</label>
               <textarea
                 id="facilitatorNotes"
@@ -153,11 +144,18 @@ export default async function CreatePage({
           </section>
 
           <section className="editor-card stack">
-            <h2 className="section-title">Scripture selector</h2>
+            <div className="stack-xs">
+              <h2 className="section-title">Scripture and response</h2>
+              <p className="body-copy">
+                Add a passage now or leave it blank and return once the lesson focus is set.
+              </p>
+            </div>
+
             <div className="field-row">
               <div className="field">
                 <label htmlFor="book">Book</label>
-                <select id="book" name="book" className="select" defaultValue="acts">
+                <select id="book" name="book" className="select" defaultValue="">
+                  <option value="">Select later</option>
                   {bibleBooks.map((book) => (
                     <option key={book.slug} value={book.slug}>
                       {book.displayName}
@@ -173,8 +171,7 @@ export default async function CreatePage({
                   type="number"
                   min="1"
                   className="input"
-                  defaultValue="2"
-                  required
+                  placeholder="2"
                 />
               </div>
               <div className="field">
@@ -185,8 +182,7 @@ export default async function CreatePage({
                   type="number"
                   min="1"
                   className="input"
-                  defaultValue="42"
-                  required
+                  placeholder="42"
                 />
               </div>
               <div className="field">
@@ -197,8 +193,7 @@ export default async function CreatePage({
                   type="number"
                   min="1"
                   className="input"
-                  defaultValue="2"
-                  required
+                  placeholder="2"
                 />
               </div>
               <div className="field">
@@ -209,16 +204,9 @@ export default async function CreatePage({
                   type="number"
                   min="1"
                   className="input"
-                  defaultValue="47"
-                  required
+                  placeholder="47"
                 />
               </div>
-            </div>
-
-            <div className="subtle-panel">
-              The saved draft stores numeric scripture boundaries in
-              <span className="code-inline"> scripture_refs </span>
-              instead of free-text references.
             </div>
 
             <div className="field">
@@ -243,7 +231,12 @@ export default async function CreatePage({
           </section>
 
           <section className="editor-card stack">
-            <h2 className="section-title">Classification and session prep</h2>
+            <div className="stack-xs">
+              <h2 className="section-title">Classification</h2>
+              <p className="body-copy">
+                These tags keep lessons organized and easier to browse later.
+              </p>
+            </div>
 
             <div className="field">
               <label>Topic tags</label>
@@ -292,6 +285,25 @@ export default async function CreatePage({
                 name="customTags"
                 className="textarea"
                 placeholder="One custom tag per line, such as hospitality, college ministry, or prayer night"
+              />
+            </div>
+          </section>
+
+          <section className="editor-card stack">
+            <div className="stack-xs">
+              <h2 className="section-title">Session prep</h2>
+              <p className="body-copy">
+                Capture the materials and prompts you want ready when it is time to lead.
+              </p>
+            </div>
+
+            <div className="field">
+              <label htmlFor="icebreaker">Icebreaker</label>
+              <textarea
+                id="icebreaker"
+                name="icebreaker"
+                className="textarea"
+                placeholder="Optional discussion starter or warm-up prompt"
               />
             </div>
 

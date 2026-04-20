@@ -101,7 +101,7 @@ export async function publishLessonAction(formData: FormData) {
         id,
         "error",
         isMissingCustomTagsColumnError(planError)
-          ? "This publishing feature needs one more setup step from the site owner."
+          ? "Publishing is not available right now."
           : planError?.message ?? "We could not find that draft.",
       ),
     );

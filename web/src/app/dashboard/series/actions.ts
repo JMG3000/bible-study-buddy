@@ -224,7 +224,7 @@ export async function createStudySeriesAction(formData: FormData) {
     redirect(
       buildSeriesCreateRedirectWithState(
         isMissingStudySeriesRelationError(seriesError)
-          ? "This series feature needs one more setup step from the site owner."
+          ? "Series saving is not available right now."
           : seriesError?.message ?? "Unable to create a study series draft.",
         snapshot,
       ),
@@ -286,7 +286,7 @@ export async function publishStudySeriesAction(formData: FormData) {
         id,
         "error",
         isMissingStudySeriesRelationError(seriesError)
-          ? "This series feature needs one more setup step from the site owner."
+          ? "Series publishing is not available right now."
           : seriesError?.message ?? "We could not find that study series draft.",
       ),
     );

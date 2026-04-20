@@ -106,7 +106,7 @@ export async function updateProfileSettingsAction(formData: FormData) {
 
   if (planError) {
     const message = isMissingAuthorHandleColumnError(planError)
-      ? "This username feature needs one more setup step from the site owner."
+      ? "Profile updates are not available right now."
       : planError.message ?? "Your profile changed, but your lessons did not sync yet.";
 
     redirect(buildProfileRedirect("error", message));

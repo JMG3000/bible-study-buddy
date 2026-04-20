@@ -77,13 +77,14 @@ export async function createLessonDraftAction(formData: FormData) {
     redirect("/login");
   }
 
-  const title = String(formData.get("title") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim() || "Untitled draft";
   const summary = String(formData.get("summary") ?? "").trim();
   const teachingObjective = String(formData.get("teachingObjective") ?? "").trim();
   const openingPrayer = String(formData.get("openingPrayer") ?? "").trim();
   const icebreaker = String(formData.get("icebreaker") ?? "").trim();
   const facilitatorNotes = String(formData.get("facilitatorNotes") ?? "").trim();
-  const durationMinutes = parseIntField(formData, "durationMinutes");
+  const rawDuration = String(formData.get("durationMinutes") ?? "").trim();
+  const durationMinutes = rawDuration ? parseIntField(formData, "durationMinutes") : 45;
   const chapterStart = parseIntField(formData, "chapterStart");
   const verseStart = parseIntField(formData, "verseStart");
   const chapterEnd = parseIntField(formData, "chapterEnd");
@@ -105,16 +106,15 @@ export async function createLessonDraftAction(formData: FormData) {
   const discussionQuestions = parseLines(formData, "discussionQuestions");
   const prayerPrompts = parseLines(formData, "prayerPrompts");
   const customTags = parseCustomTags(formData, "customTags");
-  const bookSlug = String(formData.get("book") ?? "");
-  const book = getBookBySlug(bookSlug);
-
-  if (!title || !summary || !teachingObjective) {
-    redirect(buildCreateRedirect("Title, summary, and teaching objective are required."));
-  }
-
-  if (!book) {
-    redirect(buildCreateRedirect("Choose a valid scripture book."));
-  }
+  const bookSlug = String(formData.get("book") ?? "").trim();
+  const book = bookSlug ? getBookBySlug(bookSlug) : null;
+  const hasScriptureInput = Boolean(
+    bookSlug ||
+      String(formData.get("chapterStart") ?? "").trim() ||
+      String(formData.get("verseStart") ?? "").trim() ||
+      String(formData.get("chapterEnd") ?? "").trim() ||
+      String(formData.get("verseEnd") ?? "").trim(),
+  );
 
   if (
     !Number.isFinite(durationMinutes) ||
@@ -151,6 +151,26 @@ export async function createLessonDraftAction(formData: FormData) {
     );
   }
 
+  if (hasScriptureInput && !book) {
+    redirect(buildCreateRedirect("Choose a valid scripture book before saving that reference."));
+  }
+
+  if (
+    hasScriptureInput &&
+    (!Number.isFinite(chapterStart) ||
+      !Number.isFinite(verseStart) ||
+      !Number.isFinite(chapterEnd) ||
+      !Number.isFinite(verseEnd) ||
+      chapterStart < 1 ||
+      verseStart < 1 ||
+      chapterEnd < 1 ||
+      verseEnd < 1 ||
+      chapterEnd < chapterStart ||
+      (chapterEnd === chapterStart && verseEnd < verseStart))
+  ) {
+    redirect(buildCreateRedirect("Enter a complete scripture range or leave the selector empty for now."));
+  }
+
   const { data: insertedPlan, error: planError } = await supabase
     .from("lesson_plans")
     .insert({
@@ -180,37 +200,39 @@ export async function createLessonDraftAction(formData: FormData) {
     redirect(
       buildCreateRedirect(
         isMissingCustomTagsColumnError(planError)
-          ? "This drafting feature needs one more setup step from the site owner."
+          ? "Draft saving is not available right now."
           : planError?.message ?? "Unable to create a new lesson draft.",
       ),
     );
   }
 
-  const { error: scriptureError } = await supabase.from("scripture_refs").insert({
-    lesson_plan_id: insertedPlan.id,
-    sequence: 1,
-    book_code: book.bookCode,
-    chapter_start: chapterStart,
-    verse_start: verseStart,
-    chapter_end: chapterEnd,
-    verse_end: verseEnd,
-    display_label: formatScriptureLabel(
-      book.displayName,
-      chapterStart,
-      verseStart,
-      chapterEnd,
-      verseEnd,
-    ),
-  });
-
-  if (scriptureError) {
-    await supabase.from("lesson_plans").delete().eq("id", insertedPlan.id);
-    redirect(
-      buildCreateRedirect(
-        scriptureError.message ??
-          "The draft was created, but the scripture reference could not be saved.",
+  if (hasScriptureInput && book) {
+    const { error: scriptureError } = await supabase.from("scripture_refs").insert({
+      lesson_plan_id: insertedPlan.id,
+      sequence: 1,
+      book_code: book.bookCode,
+      chapter_start: chapterStart,
+      verse_start: verseStart,
+      chapter_end: chapterEnd,
+      verse_end: verseEnd,
+      display_label: formatScriptureLabel(
+        book.displayName,
+        chapterStart,
+        verseStart,
+        chapterEnd,
+        verseEnd,
       ),
-    );
+    });
+
+    if (scriptureError) {
+      await supabase.from("lesson_plans").delete().eq("id", insertedPlan.id);
+      redirect(
+        buildCreateRedirect(
+          scriptureError.message ??
+            "The draft was created, but the scripture reference could not be saved.",
+        ),
+      );
+    }
   }
 
   redirect("/dashboard?created=1");
