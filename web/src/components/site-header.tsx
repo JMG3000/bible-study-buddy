@@ -7,6 +7,7 @@ export async function SiteHeader() {
   const navLinks = [
     { href: "/plans", label: "Browse" },
     { href: "/dashboard", label: "Dashboard" },
+    ...(viewer?.role === "admin" ? [{ href: "/admin/reports", label: "Reports" }] : []),
   ];
 
   return (

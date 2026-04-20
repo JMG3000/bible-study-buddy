@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PlanCard } from "@/components/plan-card";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getCurrentViewer, getSavedPlans } from "@/lib/lesson-plans";
+import { removeSavedPlanAction } from "./actions";
 
 export const metadata: Metadata = {
   title: "Saved Lessons",
@@ -41,7 +42,20 @@ export default async function SavedPlansPage() {
           savedPlans.length > 0 ? (
             <div className="card-grid">
               {savedPlans.map((plan) => (
-                <PlanCard key={plan.id} plan={plan} />
+                <div key={plan.id} className="stack-sm">
+                  <PlanCard plan={plan} />
+                  <form action={removeSavedPlanAction}>
+                    <input type="hidden" name="lessonPlanId" value={plan.id} />
+                    <input
+                      type="hidden"
+                      name="lessonPath"
+                      value={plan.slug ? `/plans/${plan.slug}` : "/dashboard/saved"}
+                    />
+                    <button type="submit" className="button-secondary auth-button">
+                      Remove from favorites
+                    </button>
+                  </form>
+                </div>
               ))}
             </div>
           ) : (
