@@ -12,8 +12,8 @@ export function SiteFooter() {
         </div>
 
         <p className="footer-copy">
-          Next steps: finish publishing, add favorites, and create a gentle
-          reporting flow that keeps the lesson library helpful and trustworthy.
+          Published lessons, favorites, and respectful reporting are now live
+          to help the lesson library stay welcoming, helpful, and trustworthy.
         </p>
       </div>
     </footer>

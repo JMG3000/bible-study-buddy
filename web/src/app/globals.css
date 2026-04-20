@@ -97,7 +97,7 @@ img {
   top: 0;
   z-index: 20;
   backdrop-filter: blur(16px);
-  background: rgba(238, 246, 255, 0.82);
+  background: rgba(67, 33, 133, 0.94);
   border-bottom: 1px solid rgba(60, 86, 137, 0.1);
 }
 
@@ -608,7 +608,7 @@ img {
 
 .site-footer {
   border-top: 1px solid rgba(60, 86, 137, 0.08);
-  background: rgba(239, 246, 255, 0.92);
+  background: rgba(67, 33, 133, 0.96);
 }
 
 .footer-copy {
