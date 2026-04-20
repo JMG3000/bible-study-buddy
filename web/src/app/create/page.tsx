@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   title: "Create a Lesson",
   description:
     "Create a draft Bible study lesson with structured scripture references and creator-only access.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = "force-dynamic";

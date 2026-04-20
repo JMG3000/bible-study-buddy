@@ -66,7 +66,7 @@ export async function createLessonDraftAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
-    redirect(buildCreateRedirect("Supabase is not configured in this environment."));
+    redirect(buildCreateRedirect("Draft creation is not available right now."));
   }
 
   const {
@@ -180,7 +180,7 @@ export async function createLessonDraftAction(formData: FormData) {
     redirect(
       buildCreateRedirect(
         isMissingCustomTagsColumnError(planError)
-          ? "Run the 0006_add_custom_tags.sql migration in Supabase, then save your draft again."
+          ? "This drafting feature needs one more setup step from the site owner."
           : planError?.message ?? "Unable to create a new lesson draft.",
       ),
     );

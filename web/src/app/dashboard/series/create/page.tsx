@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   title: "Create a Study Series",
   description:
     "Group independent lesson plans into an ordered study series while keeping each lesson fully standalone.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 function readValue(

@@ -74,7 +74,7 @@ export async function publishLessonAction(formData: FormData) {
       buildPlanRedirect(
         id,
         "error",
-        "Supabase is not configured in this environment.",
+        "Publishing is not available right now.",
       ),
     );
   }
@@ -101,7 +101,7 @@ export async function publishLessonAction(formData: FormData) {
         id,
         "error",
         isMissingCustomTagsColumnError(planError)
-          ? "Run the 0006_add_custom_tags.sql migration in Supabase before publishing this lesson."
+          ? "This publishing feature needs one more setup step from the site owner."
           : planError?.message ?? "We could not find that draft.",
       ),
     );

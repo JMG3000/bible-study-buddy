@@ -124,7 +124,7 @@ export async function createStudySeriesAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
-    redirect(buildSeriesCreateRedirect("Supabase is not configured in this environment."));
+    redirect(buildSeriesCreateRedirect("Series creation is not available right now."));
   }
 
   const {
@@ -224,7 +224,7 @@ export async function createStudySeriesAction(formData: FormData) {
     redirect(
       buildSeriesCreateRedirectWithState(
         isMissingStudySeriesRelationError(seriesError)
-          ? "Run the 0007_add_study_series.sql migration in Supabase, then save your series again."
+          ? "This series feature needs one more setup step from the site owner."
           : seriesError?.message ?? "Unable to create a study series draft.",
         snapshot,
       ),
@@ -263,7 +263,7 @@ export async function publishStudySeriesAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
-    redirect(buildSeriesRedirect(id, "error", "Supabase is not configured in this environment."));
+    redirect(buildSeriesRedirect(id, "error", "Series publishing is not available right now."));
   }
 
   const {
@@ -286,7 +286,7 @@ export async function publishStudySeriesAction(formData: FormData) {
         id,
         "error",
         isMissingStudySeriesRelationError(seriesError)
-          ? "Run the 0007_add_study_series.sql migration in Supabase before publishing this series."
+          ? "This series feature needs one more setup step from the site owner."
           : seriesError?.message ?? "We could not find that study series draft.",
       ),
     );

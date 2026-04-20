@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   title: "Profile Settings",
   description:
     "Manage your public username and screen name for Bible Study Buddy: Free.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = "force-dynamic";

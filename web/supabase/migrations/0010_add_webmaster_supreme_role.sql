@@ -21,10 +21,7 @@ security definer
 set search_path = public
 as $$
   select coalesce(
-    public.current_profile_role() in (
-      'admin'::public.user_role,
-      'webmaster_supreme'::public.user_role
-    ),
+    public.current_profile_role()::text in ('admin', 'webmaster_supreme'),
     false
   )
 $$;
@@ -39,11 +36,7 @@ as $$
     select 1
     from public.profiles p
     where p.user_id = (select auth.uid())
-      and p.role in (
-        'admin'::public.user_role,
-        'reviewer'::public.user_role,
-        'webmaster_supreme'::public.user_role
-      )
+      and p.role::text in ('admin', 'reviewer', 'webmaster_supreme')
   );
 $$;
 
@@ -76,11 +69,7 @@ begin
     else 'user'::public.user_role
   end
   where p.user_id = target_user_id
-    and p.role not in (
-      'admin'::public.user_role,
-      'reviewer'::public.user_role,
-      'webmaster_supreme'::public.user_role
-    );
+    and p.role::text not in ('admin', 'reviewer', 'webmaster_supreme');
 
   return null;
 end;

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { isSupabaseConfigured } from "@/lib/env";
 import {
   canManageUsersRole,
   getCurrentViewer,
@@ -24,6 +23,10 @@ export async function generateMetadata({
 
   return {
     title: plan ? `Edit ${plan.title}` : "Lesson not found",
+    robots: {
+      index: false,
+      follow: false,
+    },
   };
 }
 
@@ -71,12 +74,6 @@ export default async function DashboardPlanPage({
             </Link>
           </div>
         </div>
-
-        {!isSupabaseConfigured() ? (
-          <div className="helper-banner">
-            Configure Supabase to activate the live lesson editor.
-          </div>
-        ) : null}
 
         {publishedSlug ? (
           <div className="helper-banner">

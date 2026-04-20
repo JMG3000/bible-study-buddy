@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state";
 import { PlanCard } from "@/components/plan-card";
-import { isSupabaseConfigured } from "@/lib/env";
 import { getCurrentViewer, getSavedPlans } from "@/lib/lesson-plans";
 import { removeSavedPlanAction } from "./actions";
 
 export const metadata: Metadata = {
   title: "Saved Lessons",
-  description: "Private saved lesson list for the current user scaffold.",
+  description: "Private saved lesson list for the current user.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -17,7 +20,6 @@ export default async function SavedPlansPage() {
     getCurrentViewer(),
     getSavedPlans(),
   ]);
-  const supabaseReady = isSupabaseConfigured();
 
   return (
     <section className="section">
@@ -26,17 +28,9 @@ export default async function SavedPlansPage() {
           <span className="eyebrow">Private library</span>
           <h1 className="page-title">Saved plans</h1>
           <p className="lead">
-            Favorites are modeled as a private user-to-plan relationship in the
-            schema and now load from Supabase for the current authenticated
-            account.
+            Keep the lessons you want to revisit close at hand.
           </p>
         </div>
-
-        {!supabaseReady ? (
-          <div className="helper-banner">
-            Configure Supabase and sign in to see private saved lessons here.
-          </div>
-        ) : null}
 
         {viewer ? (
           savedPlans.length > 0 ? (
@@ -67,7 +61,7 @@ export default async function SavedPlansPage() {
         ) : (
           <EmptyState
             title="Sign in to see saved lessons"
-            description="Saved plans are private per user, so this view only loads for the current authenticated account."
+            description="Saved plans are private to your account and only appear after you sign in."
           />
         )}
       </div>

@@ -9,13 +9,17 @@ import {
   getCurrentViewer,
   isWebmasterSupremeRole,
 } from "@/lib/lesson-plans";
-import { resetUserMetricsAction, updateUserRoleAction } from "./actions";
+import { runWebmasterControlAction, updateUserRoleAction } from "./actions";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export const metadata: Metadata = {
   title: "User Management",
   description: "Staff controls for managing Bible Study Buddy account roles.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -143,7 +147,8 @@ export default async function AdminUsersPage({
               <h2 className="section-title">How these roles work right now</h2>
               <p className="body-copy">
                 Webmaster Supreme sits above admin, carries every standard
-                permission, and can reset user metrics and authored content.
+                permission, and can clear specific metrics or content without
+                opening the database directly.
                 Admins can manage users and moderation. Reviewers can work the
                 report queue without touching account roles. Creators are lesson
                 authors, while users are signed-in members who have not created
@@ -214,14 +219,87 @@ export default async function AdminUsersPage({
                   </div>
 
                   {isWebmaster ? (
-                    <div className="admin-role-actions">
-                      <form action={resetUserMetricsAction}>
-                        <input type="hidden" name="userId" value={user.userId} />
-                        <button type="submit" className="button-secondary">
-                          Reset metrics and clear content
-                        </button>
-                      </form>
-                    </div>
+                    <section className="subtle-panel stack-sm">
+                      <div className="stack-xs">
+                        <span className="eyebrow">Webmaster Supreme</span>
+                        <h3 className="card-title">Recovery controls</h3>
+                        <p className="body-copy">
+                          Clear only the lessons, reports, or saved items you mean to reset.
+                        </p>
+                      </div>
+
+                      <div className="admin-role-actions">
+                        <form action={runWebmasterControlAction}>
+                          <input type="hidden" name="userId" value={user.userId} />
+                          <input type="hidden" name="actionKind" value="clear_drafts" />
+                          <button type="submit" className="button-secondary">
+                            Clear drafts
+                          </button>
+                        </form>
+                        <form action={runWebmasterControlAction}>
+                          <input type="hidden" name="userId" value={user.userId} />
+                          <input
+                            type="hidden"
+                            name="actionKind"
+                            value="clear_published_lessons"
+                          />
+                          <button type="submit" className="button-secondary">
+                            Clear published
+                          </button>
+                        </form>
+                        <form action={runWebmasterControlAction}>
+                          <input type="hidden" name="userId" value={user.userId} />
+                          <input
+                            type="hidden"
+                            name="actionKind"
+                            value="clear_unpublished_lessons"
+                          />
+                          <button type="submit" className="button-secondary">
+                            Clear unpublished
+                          </button>
+                        </form>
+                        <form action={runWebmasterControlAction}>
+                          <input type="hidden" name="userId" value={user.userId} />
+                          <input type="hidden" name="actionKind" value="clear_study_series" />
+                          <button type="submit" className="button-secondary">
+                            Clear series
+                          </button>
+                        </form>
+                        <form action={runWebmasterControlAction}>
+                          <input type="hidden" name="userId" value={user.userId} />
+                          <input
+                            type="hidden"
+                            name="actionKind"
+                            value="clear_reports_created"
+                          />
+                          <button type="submit" className="button-secondary">
+                            Clear reports created
+                          </button>
+                        </form>
+                        <form action={runWebmasterControlAction}>
+                          <input type="hidden" name="userId" value={user.userId} />
+                          <input
+                            type="hidden"
+                            name="actionKind"
+                            value="clear_reports_against"
+                          />
+                          <button type="submit" className="button-secondary">
+                            Clear reports against
+                          </button>
+                        </form>
+                        <form action={runWebmasterControlAction}>
+                          <input type="hidden" name="userId" value={user.userId} />
+                          <input
+                            type="hidden"
+                            name="actionKind"
+                            value="clear_saved_favorites"
+                          />
+                          <button type="submit" className="button-secondary">
+                            Clear favorites
+                          </button>
+                        </form>
+                      </div>
+                    </section>
                   ) : null}
 
                   {user.isCurrentViewer ? (

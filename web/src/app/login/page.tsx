@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   title: "Sign In",
   description:
     "Sign in with OAuth to create and manage Bible study lesson drafts.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -69,8 +73,7 @@ export default async function LoginPage({
           </div>
 
           <div className="subtle-panel">
-            Choose the provider you trust on this device. On Google, the sign-in
-            flow now requests an account chooser before continuing.
+            Choose the sign-in provider you trust on this device.
           </div>
         </div>
       </div>

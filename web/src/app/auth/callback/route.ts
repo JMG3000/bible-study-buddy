@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   if (!supabase) {
     const loginUrl = new URL(
-      appendMessage("/login", "error", "Supabase auth is not configured in this environment."),
+      appendMessage("/login", "error", "Sign-in is not available right now."),
       request.url,
     );
 

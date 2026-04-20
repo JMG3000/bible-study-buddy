@@ -38,7 +38,7 @@ export async function updateProfileSettingsAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
-    redirect(buildProfileRedirect("error", "Supabase is not configured yet."));
+    redirect(buildProfileRedirect("error", "Profile updates are not available right now."));
   }
 
   const {
@@ -106,7 +106,7 @@ export async function updateProfileSettingsAction(formData: FormData) {
 
   if (planError) {
     const message = isMissingAuthorHandleColumnError(planError)
-      ? "Run the 0005_add_lesson_plan_author_handles.sql migration in Supabase, then save your public username again."
+      ? "This username feature needs one more setup step from the site owner."
       : planError.message ?? "Your profile changed, but your lessons did not sync yet.";
 
     redirect(buildProfileRedirect("error", message));

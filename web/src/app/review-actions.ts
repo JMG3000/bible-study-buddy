@@ -36,7 +36,7 @@ function buildReviewRedirect(path: string, key: string, value: string) {
 }
 
 function buildMigrationMessage() {
-  return "Run the 0009_add_reviewer_role_and_report_threads.sql migration in Supabase before using review conversations.";
+  return "Review conversations need one more setup step from the site owner.";
 }
 
 type LoadedReviewContext = {
@@ -197,7 +197,7 @@ export async function openReviewThreadAction(formData: FormData) {
   }
 
   if (!supabase) {
-    redirect(buildReviewRedirect(returnPath, "error", "Supabase is not configured yet."));
+    redirect(buildReviewRedirect(returnPath, "error", "Review tools are not available right now."));
   }
 
   if (!canReviewReportsRole(viewer.role)) {

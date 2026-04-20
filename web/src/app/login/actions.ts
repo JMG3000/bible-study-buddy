@@ -46,9 +46,7 @@ export async function signInWithOAuthAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
-    redirect(
-      buildLoginRedirect("Supabase auth is not configured yet in this environment."),
-    );
+    redirect(buildLoginRedirect("Sign-in is not available right now."));
   }
 
   cookieStore.set(POST_AUTH_REDIRECT_COOKIE, nextPath, getRedirectCookieOptions());

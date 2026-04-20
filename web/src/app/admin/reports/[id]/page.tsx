@@ -35,6 +35,10 @@ export async function generateMetadata({
 
   return {
     title: report ? `Review ${report.lessonPlanTitle}` : "Review report",
+    robots: {
+      index: false,
+      follow: false,
+    },
   };
 }
 

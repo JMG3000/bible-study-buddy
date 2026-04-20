@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { PlanCard } from "@/components/plan-card";
-import { isSupabaseConfigured } from "@/lib/env";
 import {
   canReviewReportsRole,
   canManageUsersRole,
@@ -17,7 +16,11 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export const metadata: Metadata = {
   title: "Creator Dashboard",
   description:
-    "Draft and published lesson plans for the current creator account scaffold.",
+    "Your private dashboard for drafting, publishing, and organizing lessons.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -44,7 +47,6 @@ export default async function DashboardPage({
   const activeReviewThreads = viewer
     ? await getCreatorActiveReviewThreads()
     : [];
-  const supabaseReady = isSupabaseConfigured();
   const created = readValue(resolvedParams, "created") === "1";
 
   return (
@@ -55,8 +57,7 @@ export default async function DashboardPage({
             <span className="eyebrow">Creator workspace</span>
             <h1 className="page-title">Dashboard</h1>
             <p className="lead">
-              Your draft, published, and unpublished lesson plans load from
-              Supabase once authentication is connected.
+              Keep your drafts, published lessons, and study series gathered in one place.
             </p>
             {viewer ? (
               <p className="body-copy">
@@ -75,13 +76,6 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        {!supabaseReady ? (
-          <div className="helper-banner">
-            Configure Supabase first, then connect auth to make this dashboard
-            live.
-          </div>
-        ) : null}
-
         {created ? (
           <div className="helper-banner">
             Draft created successfully. You can now find it in your dashboard list.
@@ -92,17 +86,16 @@ export default async function DashboardPage({
           <>
             <section className="surface-card stack-sm">
               <div className="stack-sm">
-                <h2 className="section-title">Profile settings live separately</h2>
+                <h2 className="section-title">Profile Settings</h2>
                 <p className="body-copy">
-                  Your public username and screen name now live in profile
-                  settings, not on the dashboard. That keeps lesson management
-                  separate from identity changes.
+                  Update your public username and screen name in one safe place,
+                  without mixing identity changes into lesson work.
                 </p>
               </div>
 
               <div className="inline-actions">
                 <Link href="/settings/profile" className="button-secondary">
-                  Open profile settings
+                  Open Profile Settings
                 </Link>
               </div>
             </section>
@@ -112,11 +105,11 @@ export default async function DashboardPage({
                 <div className="stack-sm">
                   <h2 className="section-title">
                     {canManageUsersRole(viewer.role)
-                      ? "Staff tools"
-                      : "Reviewer tools"}
+                      ? "Staff Tools"
+                      : "Reviewer Tools"}
                   </h2>
                   <p className="body-copy">
-                    Review reported lessons without leaving the app.
+                    Review reports here, and manage users too when your role allows it.
                   </p>
                 </div>
 
@@ -249,7 +242,7 @@ export default async function DashboardPage({
         ) : (
           <EmptyState
             title="Sign in to open your dashboard"
-            description="This route now reads from Supabase and only shows plans that belong to the current authenticated creator."
+            description="Open your private dashboard to manage the lessons and series connected to your account."
           />
         )}
       </div>

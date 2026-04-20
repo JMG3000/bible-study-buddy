@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
-import { isSupabaseConfigured } from "@/lib/env";
 import {
   canManageUsersRole,
   canReviewReportsRole,
@@ -15,6 +14,10 @@ export const metadata: Metadata = {
   title: "Moderation Reports",
   description:
     "Reviewer moderation queue for reviewing lesson-plan reports.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -37,7 +40,6 @@ export default async function ReportsPage({
     getOpenReports(),
     searchParams,
   ]);
-  const supabaseReady = isSupabaseConfigured();
   const canManageUsers = viewer ? canManageUsersRole(viewer.role) : false;
   const canReview = viewer ? canReviewReportsRole(viewer.role) : false;
   const updated = readValue(resolvedParams, "updated");
@@ -65,13 +67,6 @@ export default async function ReportsPage({
             </div>
           ) : null}
         </div>
-
-        {!supabaseReady ? (
-          <div className="helper-banner">
-            Configure Supabase and sign in as a reviewer or admin to load the live report
-            queue.
-          </div>
-        ) : null}
 
         {updated ? <div className="helper-banner">{updated}</div> : null}
         {error ? (
@@ -121,7 +116,7 @@ export default async function ReportsPage({
         ) : (
           <EmptyState
             title="Reviewer access required"
-            description="The moderation queue reads directly from Supabase and only loads for authenticated reviewer or admin accounts."
+            description="Only reviewer, admin, or higher-trust staff accounts can open the moderation queue."
           />
         )}
       </div>

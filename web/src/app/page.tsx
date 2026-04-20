@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { PlanCard } from "@/components/plan-card";
-import { isSupabaseConfigured } from "@/lib/env";
 import { getFeaturedPlans, getPublishedPlans } from "@/lib/lesson-plans";
 
 export default async function HomePage() {
@@ -10,7 +9,6 @@ export default async function HomePage() {
     getPublishedPlans({ sort: "newest" }),
   ]);
   const publishedCount = newest.length;
-  const supabaseReady = isSupabaseConfigured();
 
   return (
     <>
@@ -83,14 +81,6 @@ export default async function HomePage() {
 
       <section className="section">
         <div className="shell">
-          {!supabaseReady ? (
-            <div className="helper-banner">
-              Add your Supabase environment variables in
-              <span className="code-inline"> .env.local </span>
-              to load live published lessons into the public catalog.
-            </div>
-          ) : null}
-
           <div className="section-head">
             <div className="stack-sm">
               <span className="eyebrow">Latest published lessons</span>
@@ -110,7 +100,7 @@ export default async function HomePage() {
           ) : (
             <EmptyState
               title="No published lessons yet"
-              description="Once lesson plans are published in Supabase, they will appear here automatically."
+              description="Published lessons will appear here as creators begin sharing them."
             />
           )}
         </div>
@@ -120,8 +110,8 @@ export default async function HomePage() {
         <div className="shell">
           <div className="section-head">
             <div className="stack-sm">
-              <span className="eyebrow">What is coming next</span>
-              <h2 className="section-title">The next steps for the product journey</h2>
+              <span className="eyebrow">Library highlights</span>
+              <h2 className="section-title">Helpful tools already built into the library</h2>
             </div>
           </div>
 
@@ -130,24 +120,24 @@ export default async function HomePage() {
               <span className="chip-muted">1. Study Series</span>
               <h3 className="card-title">Guide people through multi-part journeys</h3>
               <p className="body-copy">
-                Let creators bundle standalone lessons into a clear sequence
-                without sacrificing individual lesson discovery or usefulness.
+                Group standalone lessons into a clear sequence without losing
+                the freedom to use each lesson on its own.
               </p>
             </div>
             <div className="surface-card">
               <span className="chip-muted">2. Favorites</span>
               <h3 className="card-title">Let people save the studies they love</h3>
               <p className="body-copy">
-                Add a personal saved list so members can return to meaningful
-                lessons and build a library for future gatherings.
+                Keep meaningful lessons close by and build a personal list for
+                future gatherings.
               </p>
             </div>
             <div className="surface-card">
               <span className="chip-muted">3. Reporting</span>
               <h3 className="card-title">Create a clear path for care and moderation</h3>
               <p className="body-copy">
-                Add reporting tools so the public catalog stays helpful, safe,
-                and focused on serving people well.
+                Respectful reporting helps the public catalog stay helpful,
+                welcoming, and trustworthy.
               </p>
             </div>
           </div>

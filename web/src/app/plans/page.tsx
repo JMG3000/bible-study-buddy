@@ -3,7 +3,6 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { PlanCard } from "@/components/plan-card";
 import { bibleBooks } from "@/lib/bible-books";
-import { isSupabaseConfigured } from "@/lib/env";
 import { getPublishedPlans } from "@/lib/lesson-plans";
 import {
   audienceOptions,
@@ -46,7 +45,6 @@ export default async function PlansPage({
   } as const;
 
   const results = await getPublishedPlans(filters);
-  const supabaseReady = isSupabaseConfigured();
 
   return (
     <section className="section">
@@ -60,19 +58,6 @@ export default async function PlansPage({
             from the same catalog.
           </p>
         </div>
-
-        {!supabaseReady ? (
-          <div className="helper-banner">
-            Supabase is not configured yet, so this catalog cannot load live
-            data. Add
-            <span className="code-inline"> NEXT_PUBLIC_SUPABASE_URL </span>
-            and
-            <span className="code-inline"> NEXT_PUBLIC_SUPABASE_ANON_KEY </span>
-            in
-            <span className="code-inline"> .env.local </span>
-            to activate it.
-          </div>
-        ) : null}
 
         <div className="search-layout">
           <aside className="surface-card filters-card no-print">
