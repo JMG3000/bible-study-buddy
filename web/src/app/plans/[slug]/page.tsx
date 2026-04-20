@@ -1,12 +1,15 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { toggleFavoriteAction } from "./actions";
 import { PrintButton } from "@/components/print-button";
 import { ScripturePill } from "@/components/scripture-pill";
 import { ScriptureTooltipEnhancer } from "@/components/scripture-tooltip-enhancer";
 import {
   buildCanonicalUrl,
   formatDate,
+  getCurrentViewer,
+  isLessonPlanSavedForViewer,
   getLessonPlanBySlug,
 } from "@/lib/lesson-plans";
 import { serializeJsonLd } from "@/lib/json-ld";
@@ -44,11 +47,16 @@ export async function generateMetadata({
 
 export default async function LessonPlanDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const plan = await getLessonPlanBySlug(slug);
+  const [plan, viewer] = await Promise.all([
+    getLessonPlanBySlug(slug),
+    getCurrentViewer(),
+  ]);
 
   if (!plan) {
     notFound();
   }
+
+  const isSaved = await isLessonPlanSavedForViewer(plan.id, viewer?.userId);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -206,6 +214,17 @@ export default async function LessonPlanDetailPage({ params }: PageProps) {
           <aside className="detail-sidebar-card surface-card">
             <div className="stack-sm no-print">
               <span className="chip-accent">Ready for the room</span>
+              <form action={toggleFavoriteAction} className="stack-sm">
+                <input type="hidden" name="lessonPlanId" value={plan.id} />
+                <input type="hidden" name="returnPath" value={`/plans/${slug}`} />
+                <button type="submit" className="button-secondary auth-button">
+                  {viewer
+                    ? isSaved
+                      ? "Remove from favorites"
+                      : "Save to favorites"
+                    : "Sign in to save to favorites"}
+                </button>
+              </form>
               <PrintButton plan={plan} />
             </div>
 

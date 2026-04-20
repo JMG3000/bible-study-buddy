@@ -1056,6 +1056,26 @@ export async function getSavedPlans() {
   });
 }
 
+export async function isLessonPlanSavedForViewer(
+  lessonPlanId: string,
+  viewerId: string | null | undefined,
+) {
+  const supabase = await createSupabaseServerClient();
+
+  if (!viewerId || !supabase) {
+    return false;
+  }
+
+  const { data } = await supabase
+    .from("favorites")
+    .select("lesson_plan_id")
+    .eq("user_id", viewerId)
+    .eq("lesson_plan_id", lessonPlanId)
+    .maybeSingle();
+
+  return Boolean(data);
+}
+
 export async function getOpenReports(): Promise<Report[]> {
   const viewer = await getCurrentViewer();
   const supabase = await createSupabaseServerClient();
