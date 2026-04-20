@@ -747,6 +747,21 @@ img {
   gap: 0.9rem;
 }
 
+.admin-user-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.admin-role-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-role-actions form {
+  display: inline-flex;
+}
+
 @media (max-width: 980px) {
   .hero-grid,
   .search-layout,

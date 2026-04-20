@@ -57,7 +57,7 @@ on public.profiles
 for insert
 with check (
   public.is_admin()
-  or (auth.uid() = user_id and role = 'creator')
+  or (auth.uid() = user_id and role = 'user')
 );
 
 drop policy if exists "profiles_update_own_or_admin" on public.profiles;

@@ -10,6 +10,7 @@ import {
 } from "@/lib/revalidation";
 import { createSupabaseServerClient, createSupabaseStaticClient } from "@/lib/supabase/server";
 import type {
+  AdminUserSummary,
   LessonPlan,
   LessonPlanFilters,
   Report,
@@ -68,9 +69,11 @@ interface AuthorRow {
 }
 
 interface ProfileRow {
+  user_id?: string;
   display_name: string;
   handle: string;
   role: UserRole;
+  created_at?: string;
 }
 
 interface StudySeriesRow {
@@ -926,7 +929,7 @@ export async function getCurrentViewer() {
       typedProfile?.handle ??
       String(user.email ?? "friend").split("@")[0] ??
       "friend",
-    role: typedProfile?.role ?? "creator",
+    role: typedProfile?.role ?? "user",
   } satisfies ViewerContext;
 }
 
@@ -1144,6 +1147,92 @@ export async function getOpenReports(): Promise<Report[]> {
     status: row.status,
     createdAt: row.created_at,
   }));
+}
+
+interface AdminProfileRow {
+  user_id: string;
+  display_name: string;
+  handle: string;
+  role: UserRole;
+  created_at: string;
+}
+
+interface AdminLessonRoleRow {
+  author_id: string;
+  status: LessonPlan["status"];
+}
+
+const ROLE_SORT_ORDER: Record<UserRole, number> = {
+  admin: 0,
+  creator: 1,
+  user: 2,
+};
+
+export async function getAdminUserSummaries(): Promise<AdminUserSummary[]> {
+  const viewer = await getCurrentViewer();
+  const supabase = await createSupabaseServerClient();
+
+  if (!viewer || viewer.role !== "admin" || !supabase) {
+    return [];
+  }
+
+  const [{ data: profileRows }, { data: lessonRows }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("user_id, display_name, handle, role, created_at")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("lesson_plans")
+      .select("author_id, status"),
+  ]);
+
+  const lessonCountMap = new Map<
+    string,
+    { lessonCount: number; publishedLessonCount: number }
+  >();
+
+  for (const lesson of (lessonRows as AdminLessonRoleRow[] | null) ?? []) {
+    const current = lessonCountMap.get(lesson.author_id) ?? {
+      lessonCount: 0,
+      publishedLessonCount: 0,
+    };
+
+    current.lessonCount += 1;
+
+    if (lesson.status === "published") {
+      current.publishedLessonCount += 1;
+    }
+
+    lessonCountMap.set(lesson.author_id, current);
+  }
+
+  return ((profileRows as AdminProfileRow[] | null) ?? [])
+    .map((profile) => {
+      const counts = lessonCountMap.get(profile.user_id) ?? {
+        lessonCount: 0,
+        publishedLessonCount: 0,
+      };
+
+      return {
+        userId: profile.user_id,
+        displayName: profile.display_name,
+        handle: profile.handle,
+        role: profile.role,
+        lessonCount: counts.lessonCount,
+        publishedLessonCount: counts.publishedLessonCount,
+        createdAt: profile.created_at,
+        isCurrentViewer: profile.user_id === viewer.userId,
+      } satisfies AdminUserSummary;
+    })
+    .sort((left, right) => {
+      const roleDelta = ROLE_SORT_ORDER[left.role] - ROLE_SORT_ORDER[right.role];
+
+      if (roleDelta !== 0) {
+        return roleDelta;
+      }
+
+      return left.handle.localeCompare(right.handle);
+    });
 }
 
 export function formatDate(value: string | null) {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { isSupabaseConfigured } from "@/lib/env";
 import { getCurrentViewer, getOpenReports } from "@/lib/lesson-plans";
@@ -22,14 +23,24 @@ export default async function ReportsPage() {
   return (
     <section className="section">
       <div className="shell stack">
-        <div className="stack-sm">
-          <span className="eyebrow">Admin surface</span>
-          <h1 className="page-title">Moderation queue</h1>
-          <p className="lead">
-            Reports do not auto-hide content. Admins review, annotate, and
-            decide whether a lesson plan should remain published or move to an
-            unpublished state.
-          </p>
+        <div className="section-head">
+          <div className="stack-sm">
+            <span className="eyebrow">Admin surface</span>
+            <h1 className="page-title">Moderation queue</h1>
+            <p className="lead">
+              Reports do not auto-hide content. Admins review, annotate, and
+              decide whether a lesson plan should remain published or move to an
+              unpublished state.
+            </p>
+          </div>
+
+          {isAdmin ? (
+            <div className="inline-actions">
+              <Link href="/admin/users" className="button-secondary">
+                Manage users
+              </Link>
+            </div>
+          ) : null}
         </div>
 
         {!supabaseReady ? (

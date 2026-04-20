@@ -1,4 +1,4 @@
-export type UserRole = "creator" | "admin";
+export type UserRole = "user" | "creator" | "admin";
 export type LessonPlanStatus = "draft" | "published" | "unpublished";
 export type ModerationState = "none" | "under_review" | "actioned";
 export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";
@@ -93,6 +93,17 @@ export interface Report {
   details: string;
   status: ReportStatus;
   createdAt: string;
+}
+
+export interface AdminUserSummary {
+  userId: string;
+  displayName: string;
+  handle: string;
+  role: UserRole;
+  lessonCount: number;
+  publishedLessonCount: number;
+  createdAt: string;
+  isCurrentViewer: boolean;
 }
 
 export interface LessonPlanFilters {

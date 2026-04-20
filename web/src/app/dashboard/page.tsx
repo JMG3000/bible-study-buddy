@@ -101,6 +101,27 @@ export default async function DashboardPage({
               </div>
             </section>
 
+            {viewer.role === "admin" ? (
+              <section className="surface-card stack-sm">
+                <div className="stack-sm">
+                  <h2 className="section-title">Admin tools</h2>
+                  <p className="body-copy">
+                    Manage reported lessons and adjust account roles without
+                    leaving the app.
+                  </p>
+                </div>
+
+                <div className="inline-actions">
+                  <Link href="/admin/reports" className="button-secondary">
+                    Open moderation queue
+                  </Link>
+                  <Link href="/admin/users" className="button-secondary">
+                    Manage users
+                  </Link>
+                </div>
+              </section>
+            ) : null}
+
             <section className="stack">
               <div className="section-head">
                 <div className="stack-sm">

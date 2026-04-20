@@ -1,6 +1,6 @@
 create extension if not exists pgcrypto;
 
-create type public.user_role as enum ('creator', 'admin');
+create type public.user_role as enum ('user', 'creator', 'admin');
 create type public.lesson_plan_status as enum ('draft', 'published', 'unpublished');
 create type public.moderation_state as enum ('none', 'under_review', 'actioned');
 create type public.report_status as enum ('open', 'reviewing', 'resolved', 'dismissed');
@@ -95,7 +95,7 @@ create table public.profiles (
   handle text not null,
   avatar_url text,
   bio text,
-  role public.user_role not null default 'creator',
+  role public.user_role not null default 'user',
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now()),
   constraint profiles_handle_format check (
@@ -452,7 +452,7 @@ on public.profiles
 for insert
 with check (
   public.is_admin()
-  or (auth.uid() = user_id and role = 'creator')
+  or (auth.uid() = user_id and role = 'user')
 );
 
 create policy "profiles_update_own_or_admin"
