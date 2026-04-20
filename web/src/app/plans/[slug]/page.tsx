@@ -1,22 +1,44 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { toggleFavoriteAction } from "./actions";
+import {
+  submitLessonReportAction,
+  toggleFavoriteAction,
+} from "./actions";
 import { PrintButton } from "@/components/print-button";
 import { ScripturePill } from "@/components/scripture-pill";
 import { ScriptureTooltipEnhancer } from "@/components/scripture-tooltip-enhancer";
 import {
   buildCanonicalUrl,
   formatDate,
+  hasViewerReportedLessonPlan,
   getCurrentViewer,
   isLessonPlanSavedForViewer,
   getLessonPlanBySlug,
 } from "@/lib/lesson-plans";
 import { serializeJsonLd } from "@/lib/json-ld";
+import type { ReportReason } from "@/lib/types";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+const reportReasonLabels: Array<{ value: ReportReason; label: string }> = [
+  { value: "inaccurate", label: "Something here seems inaccurate" },
+  { value: "inappropriate", label: "The tone or content feels inappropriate" },
+  { value: "copyright", label: "This may use material without permission" },
+  { value: "spam", label: "This looks like spam or low-value content" },
+  { value: "other", label: "Something else needs a careful look" },
+];
+
+function readValue(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string,
+) {
+  const value = searchParams[key];
+  return Array.isArray(value) ? value[0] : value ?? "";
+}
 
 export async function generateMetadata({
   params,
@@ -45,18 +67,24 @@ export async function generateMetadata({
   };
 }
 
-export default async function LessonPlanDetailPage({ params }: PageProps) {
+export default async function LessonPlanDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const [plan, viewer] = await Promise.all([
+  const [plan, viewer, resolvedSearchParams] = await Promise.all([
     getLessonPlanBySlug(slug),
     getCurrentViewer(),
+    searchParams,
   ]);
 
   if (!plan) {
     notFound();
   }
 
-  const isSaved = await isLessonPlanSavedForViewer(plan.id, viewer?.userId);
+  const [isSaved, hasReported] = await Promise.all([
+    isLessonPlanSavedForViewer(plan.id, viewer?.userId),
+    hasViewerReportedLessonPlan(plan.id, viewer?.userId),
+  ]);
+  const reportMessage = readValue(resolvedSearchParams, "report");
+  const reportError = readValue(resolvedSearchParams, "reportError");
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -226,6 +254,72 @@ export default async function LessonPlanDetailPage({ params }: PageProps) {
                 </button>
               </form>
               <PrintButton plan={plan} />
+            </div>
+
+            <div className="stack-sm no-print">
+              <h2 className="section-title">Report lesson</h2>
+              <p className="body-copy">
+                If something here needs a closer look, you can send a short,
+                respectful note for review.
+              </p>
+
+              {reportMessage ? <div className="helper-banner">{reportMessage}</div> : null}
+              {reportError ? (
+                <div className="helper-banner" role="alert">
+                  {reportError}
+                </div>
+              ) : null}
+
+              {viewer ? (
+                hasReported ? (
+                  <div className="subtle-panel">
+                    Thank you. You have already submitted a report for this lesson.
+                  </div>
+                ) : (
+                  <form action={submitLessonReportAction} className="stack-sm">
+                    <input type="hidden" name="lessonPlanId" value={plan.id} />
+                    <input type="hidden" name="returnPath" value={`/plans/${slug}`} />
+
+                    <div className="field">
+                      <label htmlFor="reason">Reason</label>
+                      <select
+                        id="reason"
+                        name="reason"
+                        className="select"
+                        defaultValue="inaccurate"
+                      >
+                        {reportReasonLabels.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="field">
+                      <label htmlFor="details">Optional note</label>
+                      <textarea
+                        id="details"
+                        name="details"
+                        className="textarea"
+                        placeholder="Share only what will help a moderator understand the concern."
+                      />
+                    </div>
+
+                    <button type="submit" className="button-secondary auth-button">
+                      Submit report
+                    </button>
+                  </form>
+                )
+              ) : (
+                <form action={submitLessonReportAction} className="stack-sm">
+                  <input type="hidden" name="lessonPlanId" value={plan.id} />
+                  <input type="hidden" name="returnPath" value={`/plans/${slug}`} />
+                  <button type="submit" className="button-secondary auth-button">
+                    Sign in to report lesson
+                  </button>
+                </form>
+              )}
             </div>
 
             <div className="stack-sm">

@@ -5,8 +5,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { ReportReason } from "@/lib/types";
 import {
   POST_AUTH_REDIRECT_COOKIE,
+  appendMessage,
   sanitizeNextPath,
 } from "@/lib/urls";
 import { getCurrentViewer } from "@/lib/lesson-plans";
@@ -19,6 +21,10 @@ function getRedirectCookieOptions() {
     secure: env.siteUrl.startsWith("https://"),
     maxAge: 60 * 10,
   };
+}
+
+function buildReportRedirect(path: string, key: string, value: string) {
+  return appendMessage(path, key, value);
 }
 
 export async function toggleFavoriteAction(formData: FormData) {
@@ -69,4 +75,99 @@ export async function toggleFavoriteAction(formData: FormData) {
   revalidatePath("/dashboard/saved");
   revalidatePath(redirectPath);
   redirect(redirectPath);
+}
+
+const validReportReasons: ReportReason[] = [
+  "inaccurate",
+  "inappropriate",
+  "copyright",
+  "spam",
+  "other",
+];
+
+export async function submitLessonReportAction(formData: FormData) {
+  const lessonPlanId = formData.get("lessonPlanId");
+  const redirectPath = sanitizeNextPath(formData.get("returnPath"), "/plans");
+  const reason = formData.get("reason");
+  const detailsEntry = formData.get("details");
+  const cookieStore = await cookies();
+  const viewer = await getCurrentViewer();
+
+  if (typeof lessonPlanId !== "string" || lessonPlanId.length === 0) {
+    redirect(redirectPath);
+  }
+
+  if (!viewer) {
+    cookieStore.set(
+      POST_AUTH_REDIRECT_COOKIE,
+      redirectPath,
+      getRedirectCookieOptions(),
+    );
+    redirect("/login");
+  }
+
+  if (typeof reason !== "string" || !validReportReasons.includes(reason as ReportReason)) {
+    redirect(buildReportRedirect(redirectPath, "reportError", "Choose a reason for the report."));
+  }
+
+  const details =
+    typeof detailsEntry === "string" && detailsEntry.trim().length > 0
+      ? detailsEntry.trim().slice(0, 1000)
+      : null;
+
+  const supabase = await createSupabaseServerClient();
+
+  if (!supabase) {
+    redirect(
+      buildReportRedirect(
+        redirectPath,
+        "reportError",
+        "Reporting is not available in this environment yet.",
+      ),
+    );
+  }
+
+  const { data: existingReport } = await supabase
+    .from("reports")
+    .select("id")
+    .eq("reporter_id", viewer.userId)
+    .eq("lesson_plan_id", lessonPlanId)
+    .maybeSingle();
+
+  if (existingReport) {
+    redirect(
+      buildReportRedirect(
+        redirectPath,
+        "report",
+        "You already shared a concern about this lesson. Thank you.",
+      ),
+    );
+  }
+
+  const { error } = await supabase.from("reports").insert({
+    lesson_plan_id: lessonPlanId,
+    reporter_id: viewer.userId,
+    reason,
+    details,
+  });
+
+  if (error) {
+    redirect(
+      buildReportRedirect(
+        redirectPath,
+        "reportError",
+        "We could not submit that report right now. Please try again.",
+      ),
+    );
+  }
+
+  revalidatePath("/admin/reports");
+  revalidatePath(redirectPath);
+  redirect(
+    buildReportRedirect(
+      redirectPath,
+      "report",
+      "Thank you. Your report has been sent for review.",
+    ),
+  );
 }
