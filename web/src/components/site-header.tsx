@@ -23,26 +23,32 @@ export async function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="site-nav" aria-label="Primary navigation">
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="button-tertiary site-nav-link">
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <div className="header-controls">
+          <nav className="site-nav" aria-label="Primary navigation">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="button-secondary header-utility-button site-nav-link"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
 
-        <div className="site-actions">
-          {viewer ? (
-            <form action={signOutAction}>
-              <button type="submit" className="button-tertiary">
-                Sign out
-              </button>
-            </form>
-          ) : (
-            <Link href="/login" className="button-tertiary">
-              Sign in
-            </Link>
-          )}
+          <div className="site-actions">
+            {viewer ? (
+              <form action={signOutAction}>
+                <button type="submit" className="button-secondary header-utility-button">
+                  Sign out
+                </button>
+              </form>
+            ) : (
+              <Link href="/login" className="button-secondary header-utility-button">
+                Sign in
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </header>

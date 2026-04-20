@@ -112,6 +112,12 @@ img {
   padding: 1rem 0;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
@@ -140,10 +146,10 @@ img {
   font-family: var(--font-display);
   font-size: 1.15rem;
   letter-spacing: 0.02em;
+  color: #ffffff;
 }
 
 .brand-copy span,
-.site-nav a,
 .meta-text,
 .helper-text,
 .eyebrow,
@@ -171,6 +177,10 @@ img {
 
 .site-actions form {
   display: inline-flex;
+}
+
+.site-nav {
+  gap: 0.5rem;
 }
 
 .site-nav a,
@@ -219,6 +229,22 @@ img {
   color: var(--brand-strong);
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(60, 86, 137, 0.14);
+}
+
+.header-utility-button {
+  padding: 0.72rem 1rem;
+  color: #ff6b6b;
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(255, 255, 255, 0.34);
+}
+
+.header-utility-button:hover {
+  color: #d94862;
+}
+
+.brand-copy span,
+.footer-copy {
+  color: #ff6b6b;
 }
 
 .button-tertiary {
@@ -616,6 +642,10 @@ img {
   font-size: 0.95rem;
 }
 
+.footer-title {
+  color: #ffffff;
+}
+
 .subtle-panel {
   border: 1px dashed rgba(80, 102, 154, 0.24);
   border-radius: var(--radius-lg);
@@ -736,6 +766,12 @@ img {
   .section-head,
   .plan-card-footer {
     align-items: start;
+    flex-direction: column;
+  }
+
+  .header-controls {
+    width: 100%;
+    align-items: stretch;
     flex-direction: column;
   }
 
