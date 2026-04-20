@@ -14,6 +14,8 @@ import type {
   LessonPlan,
   LessonPlanFilters,
   Report,
+  ReportReviewDetail,
+  ReportReviewMessage,
   ReportReason,
   ReportStatus,
   StudySeries,
@@ -102,6 +104,26 @@ interface ReportRow {
   reason: ReportReason;
   details: string | null;
   status: ReportStatus;
+  assigned_reviewer_id: string | null;
+  resolution_note: string | null;
+  created_at: string;
+}
+
+interface ReportThreadRow {
+  id: string;
+  report_id: string;
+  lesson_plan_id: string;
+  creator_id: string;
+  reviewer_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ReportMessageRow {
+  id: string;
+  thread_id: string;
+  author_id: string;
+  body: string;
   created_at: string;
 }
 
@@ -110,6 +132,10 @@ export interface ViewerContext {
   displayName: string;
   handle: string;
   role: UserRole;
+}
+
+export function canReviewReportsRole(role: UserRole | null | undefined) {
+  return role === "admin" || role === "reviewer";
 }
 
 function normalizeHandleQuery(value: string) {
@@ -256,6 +282,25 @@ function isMissingStudySeriesRelationError(error: {
     error.code === "PGRST205" ||
     error.code === "42P01" ||
     error.message?.includes("study_series") === true
+  );
+}
+
+function isMissingReportReviewFeatureError(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "PGRST204" ||
+    error.code === "PGRST205" ||
+    error.code === "42P01" ||
+    error.message?.includes("report_review_threads") === true ||
+    error.message?.includes("report_review_messages") === true ||
+    error.message?.includes("assigned_reviewer_id") === true ||
+    error.message?.includes("resolution_note") === true
   );
 }
 
@@ -1103,15 +1148,27 @@ export async function getOpenReports(): Promise<Report[]> {
   const viewer = await getCurrentViewer();
   const supabase = await createSupabaseServerClient();
 
-  if (!viewer || viewer.role !== "admin" || !supabase) {
+  if (!viewer || !canReviewReportsRole(viewer.role) || !supabase) {
     return [];
   }
 
-  const { data } = await supabase
-    .from("reports")
-    .select("id, lesson_plan_id, reporter_id, reason, details, status, created_at")
-    .in("status", ["open", "reviewing"])
-    .order("created_at", { ascending: false });
+  const [{ data, error: reportsError }, { data: threadRows, error: threadError }] =
+    await Promise.all([
+    supabase
+      .from("reports")
+      .select(
+        "id, lesson_plan_id, reporter_id, reason, details, status, assigned_reviewer_id, resolution_note, created_at",
+      )
+      .in("status", ["open", "reviewing"])
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("report_review_threads")
+      .select("report_id"),
+  ]);
+
+  if (reportsError) {
+    return [];
+  }
 
   const rows = (data as ReportRow[] | null) ?? [];
 
@@ -1120,33 +1177,81 @@ export async function getOpenReports(): Promise<Report[]> {
   }
 
   const lessonPlanIds = [...new Set(rows.map((row) => row.lesson_plan_id))];
-  const reporterIds = [...new Set(rows.map((row) => row.reporter_id))];
+  const participantIds = [
+    ...new Set(
+      rows.flatMap((row) =>
+        [row.reporter_id, row.assigned_reviewer_id].filter(
+          (value): value is string => Boolean(value),
+        ),
+      ),
+    ),
+  ];
 
-  const [{ data: lessonTitles }, reporters] = await Promise.all([
+  const [{ data: lessonRows }, participants] = await Promise.all([
     supabase
       .from("lesson_plans")
-      .select("id, title")
+      .select("id, title, slug, author_id, author_handle")
       .in("id", lessonPlanIds),
-    fetchAuthors(supabase, reporterIds),
+    fetchAuthors(supabase, participantIds),
   ]);
 
-  const titles = new Map<string, string>(
-    ((lessonTitles as Array<{ id: string; title: string }> | null) ?? []).map(
-      (row) => [row.id, row.title],
-    ),
+  const lessonMap = new Map<
+    string,
+    {
+      title: string;
+      slug: string | null;
+      authorId: string;
+      authorHandle: string | null;
+    }
+  >(
+    (((lessonRows as Array<{
+      id: string;
+      title: string;
+      slug: string | null;
+      author_id: string;
+      author_handle: string | null;
+    }> | null) ?? []).map((row) => [
+      row.id,
+      {
+        title: row.title,
+        slug: row.slug,
+        authorId: row.author_id,
+        authorHandle: row.author_handle,
+      },
+    ])),
+  );
+  const openThreadIds = new Set<string>(
+    isMissingReportReviewFeatureError(threadError)
+      ? []
+      : ((threadRows as Array<{ report_id: string }> | null) ?? []).map(
+          (row) => row.report_id,
+        ),
   );
 
-  return rows.map((row) => ({
-    id: row.id,
-    lessonPlanId: row.lesson_plan_id,
-    lessonPlanTitle: titles.get(row.lesson_plan_id) ?? "Unknown lesson",
-    reporterName:
-      reporters.get(row.reporter_id)?.display_name ?? "Unknown reporter",
-    reason: row.reason,
-    details: row.details ?? "",
-    status: row.status,
-    createdAt: row.created_at,
-  }));
+  return rows.map((row) => {
+    const lesson = lessonMap.get(row.lesson_plan_id);
+
+    return {
+      id: row.id,
+      lessonPlanId: row.lesson_plan_id,
+      lessonPlanTitle: lesson?.title ?? "Unknown lesson",
+      lessonPlanSlug: lesson?.slug ?? null,
+      lessonAuthorId: lesson?.authorId,
+      lessonAuthorHandle: lesson?.authorHandle ?? null,
+      reporterName:
+        participants.get(row.reporter_id)?.display_name ?? "Unknown reporter",
+      reporterHandle: participants.get(row.reporter_id)?.handle ?? null,
+      reason: row.reason,
+      details: row.details ?? "",
+      status: row.status,
+      assignedReviewerHandle:
+        (row.assigned_reviewer_id
+          ? participants.get(row.assigned_reviewer_id)?.handle
+          : null) ?? null,
+      threadOpen: openThreadIds.has(row.id),
+      createdAt: row.created_at,
+    } satisfies Report;
+  });
 }
 
 interface AdminProfileRow {
@@ -1158,14 +1263,22 @@ interface AdminProfileRow {
 }
 
 interface AdminLessonRoleRow {
+  id: string;
   author_id: string;
   status: LessonPlan["status"];
 }
 
+interface AdminReportMetricRow {
+  reporter_id: string;
+  lesson_plan_id: string;
+  status: ReportStatus;
+}
+
 const ROLE_SORT_ORDER: Record<UserRole, number> = {
   admin: 0,
-  creator: 1,
-  user: 2,
+  reviewer: 1,
+  creator: 2,
+  user: 3,
 };
 
 export async function getAdminUserSummaries(): Promise<AdminUserSummary[]> {
@@ -1176,25 +1289,42 @@ export async function getAdminUserSummaries(): Promise<AdminUserSummary[]> {
     return [];
   }
 
-  const [{ data: profileRows }, { data: lessonRows }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("user_id, display_name, handle, role, created_at")
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("lesson_plans")
-      .select("author_id, status"),
-  ]);
+  const [{ data: profileRows }, { data: lessonRows }, { data: reportRows }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("user_id, display_name, handle, role, created_at")
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("lesson_plans")
+        .select("id, author_id, status"),
+      supabase
+        .from("reports")
+        .select("reporter_id, lesson_plan_id, status"),
+    ]);
 
   const lessonCountMap = new Map<
     string,
-    { lessonCount: number; publishedLessonCount: number }
+    {
+      lessonCount: number;
+      publishedLessonCount: number;
+      draftLessonCount: number;
+    }
+  >();
+  const lessonAuthorMap = new Map<string, string>();
+  const reportsCreatedCountMap = new Map<string, number>();
+  const reportsAgainstCountMap = new Map<
+    string,
+    { total: number; active: number }
   >();
 
   for (const lesson of (lessonRows as AdminLessonRoleRow[] | null) ?? []) {
+    lessonAuthorMap.set(lesson.id, lesson.author_id);
+
     const current = lessonCountMap.get(lesson.author_id) ?? {
       lessonCount: 0,
       publishedLessonCount: 0,
+      draftLessonCount: 0,
     };
 
     current.lessonCount += 1;
@@ -1203,14 +1333,49 @@ export async function getAdminUserSummaries(): Promise<AdminUserSummary[]> {
       current.publishedLessonCount += 1;
     }
 
+    if (lesson.status === "draft") {
+      current.draftLessonCount += 1;
+    }
+
     lessonCountMap.set(lesson.author_id, current);
+  }
+
+  for (const report of (reportRows as AdminReportMetricRow[] | null) ?? []) {
+    reportsCreatedCountMap.set(
+      report.reporter_id,
+      (reportsCreatedCountMap.get(report.reporter_id) ?? 0) + 1,
+    );
+
+    const authorId = lessonAuthorMap.get(report.lesson_plan_id);
+
+    if (!authorId) {
+      continue;
+    }
+
+    const current = reportsAgainstCountMap.get(authorId) ?? {
+      total: 0,
+      active: 0,
+    };
+
+    current.total += 1;
+
+    if (report.status === "open" || report.status === "reviewing") {
+      current.active += 1;
+    }
+
+    reportsAgainstCountMap.set(authorId, current);
   }
 
   return ((profileRows as AdminProfileRow[] | null) ?? [])
     .map((profile) => {
-      const counts = lessonCountMap.get(profile.user_id) ?? {
+      const lessonCounts = lessonCountMap.get(profile.user_id) ?? {
         lessonCount: 0,
         publishedLessonCount: 0,
+        draftLessonCount: 0,
+      };
+      const reviewCounts = reportsAgainstCountMap.get(profile.user_id) ?? {
+        total: 0,
+        active: 0,
       };
 
       return {
@@ -1218,8 +1383,12 @@ export async function getAdminUserSummaries(): Promise<AdminUserSummary[]> {
         displayName: profile.display_name,
         handle: profile.handle,
         role: profile.role,
-        lessonCount: counts.lessonCount,
-        publishedLessonCount: counts.publishedLessonCount,
+        lessonCount: lessonCounts.lessonCount,
+        publishedLessonCount: lessonCounts.publishedLessonCount,
+        draftLessonCount: lessonCounts.draftLessonCount,
+        reportsCreatedCount: reportsCreatedCountMap.get(profile.user_id) ?? 0,
+        reportsAgainstCount: reviewCounts.total,
+        activeReportsAgainstCount: reviewCounts.active,
         createdAt: profile.created_at,
         isCurrentViewer: profile.user_id === viewer.userId,
       } satisfies AdminUserSummary;
@@ -1233,6 +1402,194 @@ export async function getAdminUserSummaries(): Promise<AdminUserSummary[]> {
 
       return left.handle.localeCompare(right.handle);
     });
+}
+
+async function fetchReportDetailBase(
+  reportId: string,
+  supabase: SupabaseClient,
+) {
+  const [{ data: reportRow, error: reportError }, { data: threadRow, error: threadError }] =
+    await Promise.all([
+    supabase
+      .from("reports")
+      .select(
+        "id, lesson_plan_id, reporter_id, reason, details, status, assigned_reviewer_id, resolution_note, created_at",
+      )
+      .eq("id", reportId)
+      .maybeSingle(),
+    supabase
+      .from("report_review_threads")
+      .select("id, report_id, lesson_plan_id, creator_id, reviewer_id, created_at, updated_at")
+      .eq("report_id", reportId)
+      .maybeSingle(),
+  ]);
+
+  if (reportError || !reportRow) {
+    return null;
+  }
+
+  const typedReport = reportRow as ReportRow;
+  const typedThread = isMissingReportReviewFeatureError(threadError)
+    ? null
+    : ((threadRow as ReportThreadRow | null) ?? null);
+
+  const [{ data: lessonRow, error: lessonError }, authorRows, messageResult] =
+    await Promise.all([
+    supabase
+      .from("lesson_plans")
+      .select("id, title, slug, author_id, author_handle")
+      .eq("id", typedReport.lesson_plan_id)
+      .maybeSingle(),
+    fetchAuthors(
+      supabase,
+      [
+        typedReport.reporter_id,
+        typedThread?.creator_id,
+        typedThread?.reviewer_id,
+        typedReport.assigned_reviewer_id,
+      ].filter((value): value is string => Boolean(value)),
+    ),
+    typedThread
+      ? supabase
+          .from("report_review_messages")
+          .select("id, thread_id, author_id, body, created_at")
+          .eq("thread_id", typedThread.id)
+          .order("created_at", { ascending: true })
+      : Promise.resolve({
+          data: [] as ReportMessageRow[],
+          error: null as { code?: string; message?: string } | null,
+        }),
+  ]);
+
+  const typedLesson = lessonRow as
+    | {
+        id: string;
+        title: string;
+        slug: string | null;
+        author_id: string;
+        author_handle: string | null;
+      }
+    | null;
+
+  if (lessonError || !typedLesson) {
+    return null;
+  }
+
+  const { data: lessonAuthorProfile } = authorRows.get(typedLesson.author_id)
+    ? { data: null as AuthorRow | null }
+    : await supabase
+        .from("profiles")
+        .select("user_id, display_name, handle, avatar_url")
+        .eq("user_id", typedLesson.author_id)
+        .maybeSingle();
+
+  const lessonAuthor =
+    authorRows.get(typedLesson.author_id) ??
+    ((lessonAuthorProfile as AuthorRow | null) ?? null) ??
+    undefined;
+  const reporter = authorRows.get(typedReport.reporter_id);
+  const assignedReviewer = typedReport.assigned_reviewer_id
+    ? authorRows.get(typedReport.assigned_reviewer_id)
+    : undefined;
+
+  const messages = isMissingReportReviewFeatureError(messageResult.error)
+    ? []
+    : ((messageResult.data as ReportMessageRow[] | null) ?? []).map(
+        (message) =>
+          ({
+            id: message.id,
+            authorId: message.author_id,
+            authorName:
+              authorRows.get(message.author_id)?.display_name ?? "Unknown user",
+            authorHandle: authorRows.get(message.author_id)?.handle ?? null,
+            body: message.body,
+            createdAt: message.created_at,
+          }) satisfies ReportReviewMessage,
+      );
+
+  return {
+    id: typedReport.id,
+    threadId: typedThread?.id ?? null,
+    lessonPlanId: typedLesson.id,
+    lessonPlanTitle: typedLesson.title,
+    lessonPlanSlug: typedLesson.slug,
+    lessonAuthorId: typedLesson.author_id,
+    lessonAuthorName: lessonAuthor?.display_name ?? "Lesson creator",
+    lessonAuthorHandle: typedLesson.author_handle ?? lessonAuthor?.handle ?? null,
+    reporterId: typedReport.reporter_id,
+    reporterName: reporter?.display_name ?? "Unknown reporter",
+    reporterHandle: reporter?.handle ?? null,
+    reason: typedReport.reason,
+    details: typedReport.details ?? "",
+    status: typedReport.status,
+    createdAt: typedReport.created_at,
+    assignedReviewerId: typedReport.assigned_reviewer_id,
+    assignedReviewerHandle: assignedReviewer?.handle ?? null,
+    resolutionNote: typedReport.resolution_note ?? "",
+    threadOpen: Boolean(typedThread),
+    messages,
+  } satisfies ReportReviewDetail;
+}
+
+export async function getReviewReportById(reportId: string) {
+  const viewer = await getCurrentViewer();
+  const supabase = await createSupabaseServerClient();
+
+  if (!viewer || !canReviewReportsRole(viewer.role) || !supabase) {
+    return null;
+  }
+
+  return fetchReportDetailBase(reportId, supabase);
+}
+
+export async function getCreatorReviewReportById(reportId: string) {
+  const viewer = await getCurrentViewer();
+  const supabase = await createSupabaseServerClient();
+
+  if (!viewer || !supabase) {
+    return null;
+  }
+
+  const detail = await fetchReportDetailBase(reportId, supabase);
+
+  if (!detail || detail.lessonAuthorId !== viewer.userId || !detail.threadOpen) {
+    return null;
+  }
+
+  return detail;
+}
+
+export async function getCreatorActiveReviewThreads() {
+  const viewer = await getCurrentViewer();
+  const supabase = await createSupabaseServerClient();
+
+  if (!viewer || !supabase) {
+    return [] as ReportReviewDetail[];
+  }
+
+  const { data: threadRows, error } = await supabase
+    .from("report_review_threads")
+    .select("report_id")
+    .eq("creator_id", viewer.userId)
+    .order("updated_at", { ascending: false });
+
+  if (isMissingReportReviewFeatureError(error)) {
+    return [] as ReportReviewDetail[];
+  }
+
+  const reportIds = ((threadRows as Array<{ report_id: string }> | null) ?? []).map(
+    (row) => row.report_id,
+  );
+
+  if (reportIds.length === 0) {
+    return [];
+  }
+
+  const details = await Promise.all(
+    reportIds.map((reportId) => fetchReportDetailBase(reportId, supabase)),
+  );
+
+  return details.filter((detail): detail is ReportReviewDetail => Boolean(detail));
 }
 
 export function formatDate(value: string | null) {

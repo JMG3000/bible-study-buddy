@@ -7,7 +7,7 @@ import { getCurrentViewer } from "@/lib/lesson-plans";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { appendMessage } from "@/lib/urls";
 
-const ALLOWED_ROLES: UserRole[] = ["user", "creator", "admin"];
+const ALLOWED_ROLES: UserRole[] = ["user", "creator", "reviewer", "admin"];
 
 function buildUsersRedirect(key: string, message: string) {
   return appendMessage("/admin/users", key, message);

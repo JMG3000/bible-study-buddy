@@ -752,6 +752,20 @@ img {
   gap: 1.25rem;
 }
 
+.review-thread {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.review-message-card {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.78);
+}
+
 .admin-role-actions {
   display: flex;
   flex-wrap: wrap;

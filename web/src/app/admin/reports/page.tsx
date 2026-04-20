@@ -2,35 +2,57 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { isSupabaseConfigured } from "@/lib/env";
-import { getCurrentViewer, getOpenReports } from "@/lib/lesson-plans";
+import {
+  canReviewReportsRole,
+  getCurrentViewer,
+  getOpenReports,
+} from "@/lib/lesson-plans";
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export const metadata: Metadata = {
   title: "Moderation Reports",
   description:
-    "Admin moderation queue scaffold for reviewing lesson-plan reports.",
+    "Reviewer moderation queue for reviewing lesson-plan reports.",
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function ReportsPage() {
-  const [viewer, items] = await Promise.all([
+function readValue(
+  searchParams: Record<string, string | string[] | undefined>,
+  key: string,
+) {
+  const value = searchParams[key];
+  return Array.isArray(value) ? value[0] : value ?? "";
+}
+
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const [viewer, items, resolvedParams] = await Promise.all([
     getCurrentViewer(),
     getOpenReports(),
+    searchParams,
   ]);
   const supabaseReady = isSupabaseConfigured();
   const isAdmin = viewer?.role === "admin";
+  const canReview = viewer ? canReviewReportsRole(viewer.role) : false;
+  const updated = readValue(resolvedParams, "updated");
+  const error = readValue(resolvedParams, "error");
 
   return (
     <section className="section">
       <div className="shell stack">
         <div className="section-head">
           <div className="stack-sm">
-            <span className="eyebrow">Admin surface</span>
+            <span className="eyebrow">Moderation surface</span>
             <h1 className="page-title">Moderation queue</h1>
             <p className="lead">
-              Reports do not auto-hide content. Admins review, annotate, and
-              decide whether a lesson plan should remain published or move to an
-              unpublished state.
+              Reports do not auto-hide content. Reviewers and admins can review,
+              annotate, and open a focused creator conversation when a report is
+              valid enough to discuss.
             </p>
           </div>
 
@@ -45,12 +67,19 @@ export default async function ReportsPage() {
 
         {!supabaseReady ? (
           <div className="helper-banner">
-            Configure Supabase and sign in as an admin to load the live report
+            Configure Supabase and sign in as a reviewer or admin to load the live report
             queue.
           </div>
         ) : null}
 
-        {isAdmin ? (
+        {updated ? <div className="helper-banner">{updated}</div> : null}
+        {error ? (
+          <div className="helper-banner" role="alert">
+            {error}
+          </div>
+        ) : null}
+
+        {canReview ? (
           items.length > 0 ? (
             <div className="stack">
               {items.map((report) => (
@@ -63,8 +92,21 @@ export default async function ReportsPage() {
                   <h2 className="section-title">{report.lessonPlanTitle}</h2>
                   <p className="body-copy">{report.details}</p>
                   <div className="meta-row">
-                    <span>Reported by {report.reporterName}</span>
-                    <span>Next action: review and annotate</span>
+                    <span>
+                      Reported by {report.reporterName}
+                      {report.reporterHandle ? ` (@${report.reporterHandle})` : ""}
+                    </span>
+                    {report.lessonAuthorHandle ? (
+                      <span>Creator @{report.lessonAuthorHandle}</span>
+                    ) : null}
+                    {report.assignedReviewerHandle ? (
+                      <span>Assigned @{report.assignedReviewerHandle}</span>
+                    ) : null}
+                  </div>
+                  <div className="inline-actions">
+                    <Link href={`/admin/reports/${report.id}`} className="button-secondary">
+                      Review report
+                    </Link>
                   </div>
                 </article>
               ))}
@@ -77,8 +119,8 @@ export default async function ReportsPage() {
           )
         ) : (
           <EmptyState
-            title="Admin access required"
-            description="The moderation queue now reads directly from Supabase and only loads for authenticated admin users."
+            title="Reviewer access required"
+            description="The moderation queue reads directly from Supabase and only loads for authenticated reviewer or admin accounts."
           />
         )}
       </div>

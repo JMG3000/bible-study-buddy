@@ -26,6 +26,7 @@ function readValue(
 const ROLE_OPTIONS: Array<{ role: UserRole; label: string }> = [
   { role: "user", label: "User" },
   { role: "creator", label: "Creator" },
+  { role: "reviewer", label: "Reviewer" },
   { role: "admin", label: "Admin" },
 ];
 
@@ -95,6 +96,13 @@ export default async function AdminUsersPage({
                 <p className="body-copy">People actively building or publishing lesson content.</p>
               </article>
               <article className="surface-card stack-xs">
+                <span className="eyebrow">Reviewers</span>
+                <strong className="card-title">{countRole(users, "reviewer")}</strong>
+                <p className="body-copy">
+                  Moderation-only access for reviewing reports without user management.
+                </p>
+              </article>
+              <article className="surface-card stack-xs">
                 <span className="eyebrow">Users</span>
                 <strong className="card-title">{countRole(users, "user")}</strong>
                 <p className="body-copy">Signed-in accounts that have not started lesson creation yet.</p>
@@ -104,9 +112,10 @@ export default async function AdminUsersPage({
             <section className="surface-card stack-sm">
               <h2 className="section-title">How these roles work right now</h2>
               <p className="body-copy">
-                Admin is the only role with extra permissions today. Creator and
-                user share the same product access for now, but creator is the
-                working label for lesson authors as this system grows.
+                Admins can manage users and moderation. Reviewers can work the
+                report queue without touching account roles. Creators are lesson
+                authors, while users are signed-in members who have not created
+                lesson content yet.
               </p>
             </section>
 
@@ -123,6 +132,18 @@ export default async function AdminUsersPage({
                   <div className="stack-xs">
                     <h2 className="section-title">{user.displayName}</h2>
                     <p className="body-copy">@{user.handle}</p>
+                  </div>
+
+                  <div className="meta-row">
+                    <span>{user.lessonCount} total lessons</span>
+                    <span>{user.draftLessonCount} drafts</span>
+                    <span>{user.publishedLessonCount} published</span>
+                  </div>
+
+                  <div className="meta-row">
+                    <span>{user.reportsCreatedCount} reports created</span>
+                    <span>{user.reportsAgainstCount} reports against</span>
+                    <span>{user.activeReportsAgainstCount} active against</span>
                   </div>
 
                   <div className="admin-role-actions">

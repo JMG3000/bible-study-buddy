@@ -1,4 +1,4 @@
-export type UserRole = "user" | "creator" | "admin";
+export type UserRole = "user" | "creator" | "reviewer" | "admin";
 export type LessonPlanStatus = "draft" | "published" | "unpublished";
 export type ModerationState = "none" | "under_review" | "actioned";
 export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";
@@ -88,10 +88,16 @@ export interface Report {
   id: string;
   lessonPlanId: string;
   lessonPlanTitle: string;
+  lessonPlanSlug?: string | null;
+  lessonAuthorHandle?: string | null;
+  lessonAuthorId?: string;
   reporterName: string;
+  reporterHandle?: string | null;
   reason: ReportReason;
   details: string;
   status: ReportStatus;
+  assignedReviewerHandle?: string | null;
+  threadOpen?: boolean;
   createdAt: string;
 }
 
@@ -102,8 +108,44 @@ export interface AdminUserSummary {
   role: UserRole;
   lessonCount: number;
   publishedLessonCount: number;
+  draftLessonCount: number;
+  reportsCreatedCount: number;
+  reportsAgainstCount: number;
+  activeReportsAgainstCount: number;
   createdAt: string;
   isCurrentViewer: boolean;
+}
+
+export interface ReportReviewMessage {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorHandle: string | null;
+  body: string;
+  createdAt: string;
+}
+
+export interface ReportReviewDetail {
+  id: string;
+  threadId: string | null;
+  lessonPlanId: string;
+  lessonPlanTitle: string;
+  lessonPlanSlug: string | null;
+  lessonAuthorId: string;
+  lessonAuthorName: string;
+  lessonAuthorHandle: string | null;
+  reporterId: string;
+  reporterName: string;
+  reporterHandle: string | null;
+  reason: ReportReason;
+  details: string;
+  status: ReportStatus;
+  createdAt: string;
+  assignedReviewerId: string | null;
+  assignedReviewerHandle: string | null;
+  resolutionNote: string;
+  threadOpen: boolean;
+  messages: ReportReviewMessage[];
 }
 
 export interface LessonPlanFilters {

@@ -4,6 +4,8 @@ import { EmptyState } from "@/components/empty-state";
 import { PlanCard } from "@/components/plan-card";
 import { isSupabaseConfigured } from "@/lib/env";
 import {
+  canReviewReportsRole,
+  getCreatorActiveReviewThreads,
   getCurrentViewer,
   getDashboardPlans,
   getDashboardStudySeries,
@@ -38,6 +40,9 @@ export default async function DashboardPage({
     searchParams,
   ]);
   const series = viewer ? await getDashboardStudySeries() : [];
+  const activeReviewThreads = viewer
+    ? await getCreatorActiveReviewThreads()
+    : [];
   const supabaseReady = isSupabaseConfigured();
   const created = readValue(resolvedParams, "created") === "1";
 
@@ -101,13 +106,14 @@ export default async function DashboardPage({
               </div>
             </section>
 
-            {viewer.role === "admin" ? (
+            {canReviewReportsRole(viewer.role) ? (
               <section className="surface-card stack-sm">
                 <div className="stack-sm">
-                  <h2 className="section-title">Admin tools</h2>
+                  <h2 className="section-title">
+                    {viewer.role === "admin" ? "Admin tools" : "Reviewer tools"}
+                  </h2>
                   <p className="body-copy">
-                    Manage reported lessons and adjust account roles without
-                    leaving the app.
+                    Review reported lessons without leaving the app.
                   </p>
                 </div>
 
@@ -115,9 +121,50 @@ export default async function DashboardPage({
                   <Link href="/admin/reports" className="button-secondary">
                     Open moderation queue
                   </Link>
-                  <Link href="/admin/users" className="button-secondary">
-                    Manage users
-                  </Link>
+                  {viewer.role === "admin" ? (
+                    <Link href="/admin/users" className="button-secondary">
+                      Manage users
+                    </Link>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
+
+            {activeReviewThreads.length > 0 ? (
+              <section className="surface-card stack-sm">
+                <div className="section-head">
+                  <div className="stack-sm">
+                    <span className="eyebrow">Active reviews</span>
+                    <h2 className="section-title">Creator review conversations</h2>
+                  </div>
+                </div>
+
+                <div className="stack">
+                  {activeReviewThreads.map((review) => (
+                    <article key={review.id} className="subtle-panel stack-sm">
+                      <div className="meta-row">
+                        <span className="chip-accent">{review.status}</span>
+                        <span>{review.reason}</span>
+                        {review.assignedReviewerHandle ? (
+                          <span>Reviewer @{review.assignedReviewerHandle}</span>
+                        ) : null}
+                      </div>
+                      <div className="stack-xs">
+                        <h3 className="card-title">{review.lessonPlanTitle}</h3>
+                        <p className="body-copy">
+                          A moderator opened a review conversation for this lesson.
+                        </p>
+                      </div>
+                      <div className="inline-actions">
+                        <Link
+                          href={`/dashboard/reviews/${review.id}`}
+                          className="button-secondary"
+                        >
+                          Open review thread
+                        </Link>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </section>
             ) : null}
