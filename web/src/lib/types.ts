@@ -7,6 +7,16 @@ export type UserRole =
 export type LessonPlanStatus = "draft" | "published" | "unpublished";
 export type ModerationState = "none" | "under_review" | "actioned";
 export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";
+export type LayoutTemplateWidgetKind =
+  | "text"
+  | "textarea"
+  | "number"
+  | "scripture_selector"
+  | "question_list"
+  | "activity_list"
+  | "checkbox_list"
+  | "tag_group"
+  | "text_list";
 export type ReportReason =
   | "inaccurate"
   | "inappropriate"
@@ -85,6 +95,51 @@ export interface StudySeries {
   lessonCount: number;
   lessons: StudySeriesLesson[];
   publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LayoutTemplateWidget {
+  id: string;
+  sectionId: string;
+  position: number;
+  kind: LayoutTemplateWidgetKind;
+  fieldKey: string;
+  label: string;
+  description: string;
+  placeholder: string;
+  isRequired: boolean;
+  isRemovable: boolean;
+  supportsMultiple: boolean;
+  options: string[];
+  settings: Record<string, unknown>;
+}
+
+export interface LayoutTemplateSection {
+  id: string;
+  position: number;
+  key: string;
+  name: string;
+  description: string;
+  isStatic: boolean;
+  widgetCount: number;
+  widgets: LayoutTemplateWidget[];
+}
+
+export interface LayoutTemplate {
+  id: string;
+  slug: string | null;
+  authorId: string | null;
+  authorName: string;
+  authorHandle: string | null;
+  title: string;
+  summary: string;
+  status: LessonPlanStatus;
+  isSystem: boolean;
+  sourceTemplateId: string | null;
+  sectionCount: number;
+  widgetCount: number;
+  sections: LayoutTemplateSection[];
   createdAt: string;
   updatedAt: string;
 }

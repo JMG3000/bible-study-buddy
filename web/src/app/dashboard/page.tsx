@@ -165,6 +165,22 @@ export default async function DashboardPage({
               </section>
             ) : null}
 
+            <section className="surface-card stack-sm">
+              <div className="stack-sm">
+                <h2 className="section-title">Layout Library</h2>
+                <p className="body-copy">
+                  Browse the shared template library and the layout drafts tied to your
+                  account.
+                </p>
+              </div>
+
+              <div className="inline-actions">
+                <Link href="/dashboard/layouts" className="button-secondary">
+                  Open layout library
+                </Link>
+              </div>
+            </section>
+
             <section className="stack">
               <div className="section-head">
                 <div className="stack-sm">
