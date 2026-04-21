@@ -16,7 +16,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export const metadata: Metadata = {
   title: "Creator Dashboard",
   description:
-    "Your private dashboard for drafting, publishing, and organizing lessons.",
+    "Manage your lesson drafts, published lessons, and study series.",
   robots: {
     index: false,
     follow: false,
@@ -242,7 +242,7 @@ export default async function DashboardPage({
         ) : (
           <EmptyState
             title="Sign in to open your dashboard"
-            description="Open your private dashboard to manage the lessons and series connected to your account."
+            description="Open your dashboard to manage the lessons and series connected to your account."
           />
         )}
       </div>

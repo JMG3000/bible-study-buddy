@@ -15,7 +15,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export const metadata: Metadata = {
   title: "Create a Lesson",
   description:
-    "Create a draft Bible study lesson with structured scripture references and creator-only access.",
+    "Start a new Bible study lesson draft and shape it over time.",
   robots: {
     index: false,
     follow: false,
@@ -60,7 +60,7 @@ export default async function CreatePage({
 
         <div className="subtle-panel">
           Signed in as <strong>{viewer.displayName}</strong>. Drafts save to your
-          creator account and appear in the dashboard immediately after submit.
+          account and appear in the dashboard right after you save.
         </div>
 
         {error ? (
@@ -85,6 +85,7 @@ export default async function CreatePage({
                 name="title"
                 className="input"
                 placeholder="Walking in Community"
+                required
               />
             </div>
 
@@ -209,6 +210,10 @@ export default async function CreatePage({
               </div>
             </div>
 
+            <div className="subtle-panel">
+              Scripture references are saved as structured chapter-and-verse ranges so the lesson stays searchable and accurate later.
+            </div>
+
             <div className="field">
               <label htmlFor="discussionQuestions">Discussion questions</label>
               <textarea
@@ -325,6 +330,10 @@ export default async function CreatePage({
                 className="textarea"
                 placeholder="One item per line"
               />
+            </div>
+
+            <div className="subtle-panel">
+              Keep up to five drafts at a time so your lesson list stays easy to manage.
             </div>
 
             <div className="inline-actions">

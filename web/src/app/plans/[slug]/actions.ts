@@ -11,7 +11,10 @@ import {
   appendMessage,
   sanitizeNextPath,
 } from "@/lib/urls";
-import { getCurrentViewer } from "@/lib/lesson-plans";
+import {
+  getCurrentViewer,
+  getViewerLessonReportAccess,
+} from "@/lib/lesson-plans";
 
 function getRedirectCookieOptions() {
   return {
@@ -127,19 +130,18 @@ export async function submitLessonReportAction(formData: FormData) {
     );
   }
 
-  const { data: existingReport } = await supabase
-    .from("reports")
-    .select("id")
-    .eq("reporter_id", viewer.userId)
-    .eq("lesson_plan_id", lessonPlanId)
-    .maybeSingle();
+  const reportAccess = await getViewerLessonReportAccess(
+    lessonPlanId,
+    viewer.userId,
+  );
 
-  if (existingReport) {
+  if (!reportAccess.canSubmit) {
     redirect(
       buildReportRedirect(
         redirectPath,
-        "report",
-        "You already shared a concern about this lesson. Thank you.",
+        "reportError",
+        reportAccess.helperMessage ??
+          "You cannot submit another report for this lesson right now.",
       ),
     );
   }

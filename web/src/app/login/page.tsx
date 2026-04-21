@@ -8,7 +8,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export const metadata: Metadata = {
   title: "Sign In",
   description:
-    "Sign in with OAuth to create and manage Bible study lesson drafts.",
+    "Sign in to create and manage Bible study lesson drafts.",
   robots: {
     index: false,
     follow: false,
@@ -45,8 +45,8 @@ export default async function LoginPage({
             <span className="eyebrow">Secure creator access</span>
             <h1 className="page-title">Sign in to create lesson drafts</h1>
             <p className="lead">
-              Use your configured OAuth provider to unlock the structured editor,
-              private dashboard, and creator-only routes.
+              Choose the sign-in method you trust on this device to open your
+              lesson editor and dashboard.
             </p>
           </div>
 

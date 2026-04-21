@@ -11,6 +11,7 @@ import {
 import { createSupabaseServerClient, createSupabaseStaticClient } from "@/lib/supabase/server";
 import type {
   AdminUserSummary,
+  LessonReportAccess,
   LessonPlan,
   LessonPlanFilters,
   Report,
@@ -75,6 +76,7 @@ interface ProfileRow {
   display_name: string;
   handle: string;
   role: UserRole;
+  report_cooldown_until?: string | null;
   created_at?: string;
 }
 
@@ -1136,24 +1138,106 @@ export async function isLessonPlanSavedForViewer(
   return Boolean(data);
 }
 
-export async function hasViewerReportedLessonPlan(
+function formatCooldownMessage(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+export async function getViewerLessonReportAccess(
   lessonPlanId: string,
   viewerId: string | null | undefined,
-) {
+): Promise<LessonReportAccess> {
   const supabase = await createSupabaseServerClient();
 
   if (!viewerId || !supabase) {
-    return false;
+    return {
+      canSubmit: false,
+      status: null,
+      ctaLabel: "Submit report",
+      helperMessage: null,
+      cooldownUntil: null,
+    };
   }
 
-  const { data } = await supabase
-    .from("reports")
-    .select("id")
-    .eq("reporter_id", viewerId)
-    .eq("lesson_plan_id", lessonPlanId)
-    .maybeSingle();
+  const [{ data: latestReport }, { data: profile }] = await Promise.all([
+    supabase
+      .from("reports")
+      .select("status, created_at")
+      .eq("reporter_id", viewerId)
+      .eq("lesson_plan_id", lessonPlanId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("report_cooldown_until")
+      .eq("user_id", viewerId)
+      .maybeSingle(),
+  ]);
 
-  return Boolean(data);
+  const typedProfile = profile as Pick<ProfileRow, "report_cooldown_until"> | null;
+  const cooldownUntil = typedProfile?.report_cooldown_until ?? null;
+
+  if (cooldownUntil && Date.parse(cooldownUntil) > Date.now()) {
+    return {
+      canSubmit: false,
+      status: "cooldown",
+      ctaLabel: "Reporting paused",
+      helperMessage: `Reporting is paused for this account until ${formatCooldownMessage(cooldownUntil)}.`,
+      cooldownUntil,
+    };
+  }
+
+  const typedLatestReport =
+    latestReport as Pick<ReportRow, "status" | "created_at"> | null;
+
+  if (!typedLatestReport) {
+    return {
+      canSubmit: true,
+      status: null,
+      ctaLabel: "Submit report",
+      helperMessage: null,
+      cooldownUntil: null,
+    };
+  }
+
+  if (
+    typedLatestReport.status === "open" ||
+    typedLatestReport.status === "reviewing"
+  ) {
+    return {
+      canSubmit: false,
+      status: typedLatestReport.status,
+      ctaLabel: "Report already active",
+      helperMessage:
+        "You already have an active review request for this lesson. Thank you.",
+      cooldownUntil: null,
+    };
+  }
+
+  if (typedLatestReport.status === "dismissed") {
+    return {
+      canSubmit: false,
+      status: typedLatestReport.status,
+      ctaLabel: "Review denied",
+      helperMessage:
+        "A previous review request for this lesson was denied from this account, so it cannot be submitted again here.",
+      cooldownUntil,
+    };
+  }
+
+  return {
+    canSubmit: true,
+    status: typedLatestReport.status,
+    ctaLabel: "Request another review",
+    helperMessage:
+      "Your earlier review on this lesson is complete. You can submit another respectful review request if needed.",
+    cooldownUntil: null,
+  };
 }
 
 export async function getOpenReports(): Promise<Report[]> {

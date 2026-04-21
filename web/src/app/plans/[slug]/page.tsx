@@ -11,8 +11,8 @@ import { ScriptureTooltipEnhancer } from "@/components/scripture-tooltip-enhance
 import {
   buildCanonicalUrl,
   formatDate,
-  hasViewerReportedLessonPlan,
   getCurrentViewer,
+  getViewerLessonReportAccess,
   isLessonPlanSavedForViewer,
   getLessonPlanBySlug,
 } from "@/lib/lesson-plans";
@@ -79,9 +79,9 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
     notFound();
   }
 
-  const [isSaved, hasReported] = await Promise.all([
+  const [isSaved, reportAccess] = await Promise.all([
     isLessonPlanSavedForViewer(plan.id, viewer?.userId),
-    hasViewerReportedLessonPlan(plan.id, viewer?.userId),
+    getViewerLessonReportAccess(plan.id, viewer?.userId),
   ]);
   const reportMessage = readValue(resolvedSearchParams, "report");
   const reportError = readValue(resolvedSearchParams, "reportError");
@@ -271,45 +271,52 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
               ) : null}
 
               {viewer ? (
-                hasReported ? (
+                !reportAccess.canSubmit ? (
                   <div className="subtle-panel">
-                    Thank you. You have already submitted a report for this lesson.
+                    {reportAccess.helperMessage ??
+                      "You cannot submit another report for this lesson right now."}
                   </div>
                 ) : (
-                  <form action={submitLessonReportAction} className="stack-sm">
-                    <input type="hidden" name="lessonPlanId" value={plan.id} />
-                    <input type="hidden" name="returnPath" value={`/plans/${slug}`} />
+                  <>
+                    {reportAccess.helperMessage ? (
+                      <div className="subtle-panel">{reportAccess.helperMessage}</div>
+                    ) : null}
 
-                    <div className="field">
-                      <label htmlFor="reason">Reason</label>
-                      <select
-                        id="reason"
-                        name="reason"
-                        className="select"
-                        defaultValue="inaccurate"
-                      >
-                        {reportReasonLabels.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <form action={submitLessonReportAction} className="stack-sm">
+                      <input type="hidden" name="lessonPlanId" value={plan.id} />
+                      <input type="hidden" name="returnPath" value={`/plans/${slug}`} />
 
-                    <div className="field">
-                      <label htmlFor="details">Optional note</label>
-                      <textarea
-                        id="details"
-                        name="details"
-                        className="textarea"
-                        placeholder="Share only what will help a moderator understand the concern."
-                      />
-                    </div>
+                      <div className="field">
+                        <label htmlFor="reason">Reason</label>
+                        <select
+                          id="reason"
+                          name="reason"
+                          className="select"
+                          defaultValue="inaccurate"
+                        >
+                          {reportReasonLabels.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                    <button type="submit" className="button-secondary auth-button">
-                      Submit report
-                    </button>
-                  </form>
+                      <div className="field">
+                        <label htmlFor="details">Optional note</label>
+                        <textarea
+                          id="details"
+                          name="details"
+                          className="textarea"
+                          placeholder="Share only what will help a moderator understand the concern."
+                        />
+                      </div>
+
+                      <button type="submit" className="button-secondary auth-button">
+                        {reportAccess.ctaLabel}
+                      </button>
+                    </form>
+                  </>
                 )
               ) : (
                 <form action={submitLessonReportAction} className="stack-sm">

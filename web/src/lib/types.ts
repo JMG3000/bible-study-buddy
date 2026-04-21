@@ -153,6 +153,14 @@ export interface ReportReviewDetail {
   messages: ReportReviewMessage[];
 }
 
+export interface LessonReportAccess {
+  canSubmit: boolean;
+  status: ReportStatus | "cooldown" | null;
+  ctaLabel: string;
+  helperMessage: string | null;
+  cooldownUntil: string | null;
+}
+
 export interface LessonPlanFilters {
   q?: string;
   topic?: string;

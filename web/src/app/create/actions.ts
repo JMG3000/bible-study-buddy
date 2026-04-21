@@ -62,6 +62,20 @@ function isMissingCustomTagsColumnError(error: {
   );
 }
 
+function isDraftLimitError(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "23514" ||
+    error.message?.toLowerCase().includes("draft limit") === true
+  );
+}
+
 export async function createLessonDraftAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
 
@@ -77,7 +91,7 @@ export async function createLessonDraftAction(formData: FormData) {
     redirect("/login");
   }
 
-  const title = String(formData.get("title") ?? "").trim() || "Untitled draft";
+  const title = String(formData.get("title") ?? "").trim();
   const summary = String(formData.get("summary") ?? "").trim();
   const teachingObjective = String(formData.get("teachingObjective") ?? "").trim();
   const openingPrayer = String(formData.get("openingPrayer") ?? "").trim();
@@ -124,19 +138,8 @@ export async function createLessonDraftAction(formData: FormData) {
     redirect(buildCreateRedirect("Duration must be between 5 and 480 minutes."));
   }
 
-  if (
-    !Number.isFinite(chapterStart) ||
-    !Number.isFinite(verseStart) ||
-    !Number.isFinite(chapterEnd) ||
-    !Number.isFinite(verseEnd) ||
-    chapterStart < 1 ||
-    verseStart < 1 ||
-    chapterEnd < 1 ||
-    verseEnd < 1 ||
-    chapterEnd < chapterStart ||
-    (chapterEnd === chapterStart && verseEnd < verseStart)
-  ) {
-    redirect(buildCreateRedirect("Enter a valid scripture chapter and verse range."));
+  if (!title) {
+    redirect(buildCreateRedirect("Add a lesson title before saving your draft."));
   }
 
   if (customTags.length > 10) {
@@ -148,6 +151,20 @@ export async function createLessonDraftAction(formData: FormData) {
   if (customTags.some((tag) => tag.length > 40)) {
     redirect(
       buildCreateRedirect("Keep each custom tag to 40 characters or fewer."),
+    );
+  }
+
+  const { count: existingDraftCount } = await supabase
+    .from("lesson_plans")
+    .select("id", { count: "exact", head: true })
+    .eq("author_id", user.id)
+    .eq("status", "draft");
+
+  if ((existingDraftCount ?? 0) >= 5) {
+    redirect(
+      buildCreateRedirect(
+        "Keep five drafts or fewer at a time. Publish or delete one before saving another.",
+      ),
     );
   }
 
@@ -201,6 +218,8 @@ export async function createLessonDraftAction(formData: FormData) {
       buildCreateRedirect(
         isMissingCustomTagsColumnError(planError)
           ? "Draft saving is not available right now."
+          : isDraftLimitError(planError)
+            ? "Keep five drafts or fewer at a time. Publish or delete one before saving another."
           : planError?.message ?? "Unable to create a new lesson draft.",
       ),
     );

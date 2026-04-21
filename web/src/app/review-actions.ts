@@ -7,8 +7,11 @@ import {
   canReviewReportsRole,
   getCurrentViewer,
 } from "@/lib/lesson-plans";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { ReportStatus } from "@/lib/types";
+import {
+  createSupabaseServerClient,
+  createSupabaseServiceClient,
+} from "@/lib/supabase/server";
+import type { ReportStatus, UserRole } from "@/lib/types";
 import { appendMessage, sanitizeNextPath } from "@/lib/urls";
 
 function isMissingReportReviewFeatureError(error: {
@@ -61,6 +64,11 @@ type LoadedReviewContext = {
   } | null;
   reporterHandle: string | null;
   creatorHandle: string | null;
+};
+
+type ProfilePenaltyRow = {
+  role: UserRole;
+  dismissed_review_count: number | null;
 };
 
 async function loadReviewContext(
@@ -456,6 +464,54 @@ export async function completeReviewAction(formData: FormData) {
           : updateError.message ?? "We could not finish that review yet.",
       ),
     );
+  }
+
+  if (outcome === "dismissed") {
+    const serviceClient = createSupabaseServiceClient();
+
+    if (!serviceClient) {
+      redirect(
+        buildReviewRedirect(
+          returnPath,
+          "error",
+          "That review cannot be closed as denied right now.",
+        ),
+      );
+    }
+
+    const { data: reporterProfile } = await serviceClient
+      .from("profiles")
+      .select("role, dismissed_review_count")
+      .eq("user_id", context.report.reporter_id)
+      .maybeSingle();
+
+    const typedReporterProfile = reporterProfile as ProfilePenaltyRow | null;
+    const cooldownUntil = new Date(
+      Date.now() + 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    const { error: penaltyError } = await serviceClient
+      .from("profiles")
+      .update({
+        report_cooldown_until: cooldownUntil,
+        dismissed_review_count:
+          (typedReporterProfile?.dismissed_review_count ?? 0) + 1,
+        role:
+          typedReporterProfile?.role === "reviewer"
+            ? "creator"
+            : typedReporterProfile?.role ?? "user",
+      })
+      .eq("user_id", context.report.reporter_id);
+
+    if (penaltyError) {
+      redirect(
+        buildReviewRedirect(
+          returnPath,
+          "error",
+          "That review cannot be closed as denied right now.",
+        ),
+      );
+    }
   }
 
   if (context.thread) {
