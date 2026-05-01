@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { LayoutContentView } from "@/components/layout-content-view";
 import {
   canManageUsersRole,
   getCurrentViewer,
   getLessonPlanById,
 } from "@/lib/lesson-plans";
+import { getLessonPlanLayoutTemplate } from "@/lib/layout-templates";
 import { publishLessonAction } from "./actions";
 
 type PageProps = {
@@ -54,6 +56,7 @@ export default async function DashboardPlanPage({
   const publishedSlug = Array.isArray(published) ? published[0] : published;
   const errorMessage = Array.isArray(error) ? error[0] : error;
   const publicHref = plan.slug ? `/plans/${plan.slug}` : null;
+  const layoutTemplate = await getLessonPlanLayoutTemplate(plan.layoutTemplateId);
 
   return (
     <section className="section">
@@ -141,14 +144,25 @@ export default async function DashboardPlanPage({
 
           <section className="editor-card stack">
             <h2 className="section-title">Discussion questions</h2>
-            <ol className="numbered-list">
-              {plan.discussionQuestions.map((question) => (
-                <li key={question} className="list-copy">
-                  {question}
-                </li>
-              ))}
-            </ol>
+            {plan.discussionQuestions.length > 0 ? (
+              <ol className="numbered-list">
+                {plan.discussionQuestions.map((question) => (
+                  <li key={question} className="list-copy">
+                    {question}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="body-copy">No discussion questions saved yet.</p>
+            )}
           </section>
+
+          {layoutTemplate ? (
+            <LayoutContentView
+              template={layoutTemplate}
+              content={plan.layoutContent ?? {}}
+            />
+          ) : null}
 
           <section className="editor-card stack">
             <h2 className="section-title">Next step for this draft</h2>

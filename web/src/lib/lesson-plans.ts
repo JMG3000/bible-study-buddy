@@ -28,6 +28,8 @@ interface LessonPlanRow {
   id: string;
   author_id: string;
   author_handle: string | null;
+  layout_template_id?: string | null;
+  layout_content?: Record<string, unknown> | null;
   slug: string | null;
   status: LessonPlan["status"];
   moderation_state: LessonPlan["moderationState"];
@@ -166,6 +168,8 @@ const LESSON_PLAN_SELECT = `
   id,
   author_id,
   author_handle,
+  layout_template_id,
+  layout_content,
   slug,
   status,
   moderation_state,
@@ -194,6 +198,8 @@ const LEGACY_LESSON_PLAN_SELECT = `
   id,
   author_id,
   author_handle,
+  layout_template_id,
+  layout_content,
   slug,
   status,
   moderation_state,
@@ -220,6 +226,8 @@ const LEGACY_LESSON_PLAN_SELECT = `
 const AUTHOR_HANDLE_LEGACY_LESSON_PLAN_SELECT = `
   id,
   author_id,
+  layout_template_id,
+  layout_content,
   slug,
   status,
   moderation_state,
@@ -562,8 +570,8 @@ async function hydrateLessonPlans(
       authorName: author?.display_name ?? authorFallback,
       authorHandle: row.author_handle ?? author?.handle ?? null,
       authorRole: "creator",
-      layoutTemplateId: null,
-      layoutContent: {},
+      layoutTemplateId: row.layout_template_id ?? null,
+      layoutContent: row.layout_content ?? {},
       status: row.status,
       moderationState: row.moderation_state,
       title: row.title,

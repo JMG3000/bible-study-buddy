@@ -329,3 +329,13 @@ export async function getEditableLayoutTemplateById(id: string) {
 
   return template;
 }
+
+export async function getLessonPlanLayoutTemplate(
+  id: string | null | undefined,
+) {
+  if (!id) {
+    return null;
+  }
+
+  return getLayoutTemplateById(id);
+}
