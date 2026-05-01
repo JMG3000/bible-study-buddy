@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { canManageUsersRole, getCurrentViewer } from "@/lib/lesson-plans";
 import type {
   LayoutTemplate,
   LayoutTemplateSection,
@@ -252,4 +253,73 @@ export async function getLayoutTemplateLibrary(userId: string) {
     publishedTemplates: templates.filter((template) => template.status === "published"),
     draftTemplates: templates.filter((template) => template.status === "draft"),
   };
+}
+
+export async function getLayoutTemplateById(id: string) {
+  const supabase = await createSupabaseServerClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("layout_templates")
+    .select(LAYOUT_TEMPLATE_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (isMissingLayoutTemplateRelationError(error) || !data) {
+    return null;
+  }
+
+  const templateRow = data as LayoutTemplateRow;
+  const [{ data: sectionData }, { data: widgetData }, { data: authorData }] =
+    await Promise.all([
+      supabase
+        .from("layout_template_sections")
+        .select("id, template_id, position, key, name, description, is_static")
+        .eq("template_id", id)
+        .order("position", { ascending: true }),
+      supabase
+        .from("layout_template_widgets")
+        .select(
+          "id, template_id, section_id, position, kind, field_key, label, description, placeholder, is_required, is_removable, supports_multiple, options, settings",
+        )
+        .eq("template_id", id)
+        .order("position", { ascending: true }),
+      templateRow.author_id
+        ? supabase
+            .from("profiles")
+            .select("user_id, display_name, handle")
+            .eq("user_id", templateRow.author_id)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+  const [template] = hydrateLayoutTemplates(
+    [templateRow],
+    (sectionData as LayoutTemplateSectionRow[] | null) ?? [],
+    (widgetData as LayoutTemplateWidgetRow[] | null) ?? [],
+    (authorData as LayoutTemplateAuthorRow[] | null) ?? [],
+  );
+
+  return template ?? null;
+}
+
+export async function getEditableLayoutTemplateById(id: string) {
+  const [viewer, template] = await Promise.all([
+    getCurrentViewer(),
+    getLayoutTemplateById(id),
+  ]);
+
+  if (
+    !viewer ||
+    !template ||
+    template.isSystem ||
+    template.status !== "draft" ||
+    (!canManageUsersRole(viewer.role) && template.authorId !== viewer.userId)
+  ) {
+    return null;
+  }
+
+  return template;
 }

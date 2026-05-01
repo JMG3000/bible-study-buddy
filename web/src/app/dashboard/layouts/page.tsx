@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/empty-state";
 import { formatDate, getCurrentViewer } from "@/lib/lesson-plans";
 import { getLayoutTemplateLibrary } from "@/lib/layout-templates";
 import type { LayoutTemplate } from "@/lib/types";
+import { cloneLayoutTemplateAction } from "./actions";
 
 export const metadata: Metadata = {
   title: "Layout Library",
@@ -65,6 +66,21 @@ function LayoutTemplateCard({
       </div>
 
       <p className="meta-text">Updated {formatDate(template.updatedAt)}</p>
+
+      <div className="inline-actions">
+        {template.status === "published" ? (
+          <form action={cloneLayoutTemplateAction}>
+            <input type="hidden" name="sourceId" value={template.id} />
+            <button type="submit" className="button-secondary">
+              Use as template
+            </button>
+          </form>
+        ) : (
+          <Link href={`/dashboard/layouts/${template.id}`} className="button-secondary">
+            Edit draft
+          </Link>
+        )}
+      </div>
     </article>
   );
 }
@@ -103,6 +119,9 @@ export default async function LayoutLibraryPage() {
           </div>
 
           <div className="inline-actions">
+            <Link href="/dashboard/layouts/create" className="button">
+              New layout
+            </Link>
             <Link href="/dashboard" className="button-secondary">
               Back to dashboard
             </Link>
