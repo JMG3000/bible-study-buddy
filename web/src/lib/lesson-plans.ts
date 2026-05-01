@@ -562,6 +562,8 @@ async function hydrateLessonPlans(
       authorName: author?.display_name ?? authorFallback,
       authorHandle: row.author_handle ?? author?.handle ?? null,
       authorRole: "creator",
+      layoutTemplateId: null,
+      layoutContent: {},
       status: row.status,
       moderationState: row.moderation_state,
       title: row.title,

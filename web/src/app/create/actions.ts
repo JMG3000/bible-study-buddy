@@ -26,6 +26,40 @@ function parseCustomTags(formData: FormData, key: string) {
   )];
 }
 
+function parseLayoutContent(formData: FormData) {
+  const content: Record<string, string | string[]> = {};
+
+  for (const [key, value] of formData.entries()) {
+    if (!key.startsWith("layoutContent:")) {
+      continue;
+    }
+
+    const fieldKey = key.replace("layoutContent:", "").trim();
+
+    if (!fieldKey) {
+      continue;
+    }
+
+    const allValues = formData
+      .getAll(key)
+      .map((entry) => String(entry).trim())
+      .filter(Boolean);
+
+    if (allValues.length > 1) {
+      content[fieldKey] = [...new Set(allValues)];
+      continue;
+    }
+
+    const singleValue = String(value).trim();
+
+    if (singleValue) {
+      content[fieldKey] = singleValue;
+    }
+  }
+
+  return content;
+}
+
 function formatScriptureLabel(
   bookName: string,
   chapterStart: number,
@@ -59,6 +93,21 @@ function isMissingCustomTagsColumnError(error: {
   return (
     error.code === "PGRST204" ||
     error.message?.includes("custom_tags") === true
+  );
+}
+
+function isMissingLayoutColumnsError(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "PGRST204" ||
+    error.message?.includes("layout_template_id") === true ||
+    error.message?.includes("layout_content") === true
   );
 }
 
@@ -120,6 +169,8 @@ export async function createLessonDraftAction(formData: FormData) {
   const discussionQuestions = parseLines(formData, "discussionQuestions");
   const prayerPrompts = parseLines(formData, "prayerPrompts");
   const customTags = parseCustomTags(formData, "customTags");
+  const layoutTemplateId = String(formData.get("layoutTemplateId") ?? "").trim();
+  const layoutContent = parseLayoutContent(formData);
   const bookSlug = String(formData.get("book") ?? "").trim();
   const book = bookSlug ? getBookBySlug(bookSlug) : null;
   const hasScriptureInput = Boolean(
@@ -201,6 +252,8 @@ export async function createLessonDraftAction(formData: FormData) {
       audience_tags: audienceTags,
       denomination_tags: denominationTags,
       custom_tags: customTags,
+      layout_template_id: layoutTemplateId || null,
+      layout_content: layoutContent,
       opening_prayer: openingPrayer || null,
       icebreaker: icebreaker || null,
       facilitator_notes: facilitatorNotes || null,
@@ -218,6 +271,8 @@ export async function createLessonDraftAction(formData: FormData) {
       buildCreateRedirect(
         isMissingCustomTagsColumnError(planError)
           ? "Draft saving is not available right now."
+          : isMissingLayoutColumnsError(planError)
+            ? "Draft saving is not available right now."
           : isDraftLimitError(planError)
             ? "Keep five drafts or fewer at a time. Publish or delete one before saving another."
           : planError?.message ?? "Unable to create a new lesson draft.",

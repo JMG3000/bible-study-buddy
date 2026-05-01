@@ -255,6 +255,12 @@ export async function getLayoutTemplateLibrary(userId: string) {
   };
 }
 
+export async function getLessonCreationLayoutTemplates(userId: string) {
+  const { publishedTemplates, draftTemplates } = await getLayoutTemplateLibrary(userId);
+
+  return [...publishedTemplates, ...draftTemplates];
+}
+
 export async function getLayoutTemplateById(id: string) {
   const supabase = await createSupabaseServerClient();
 

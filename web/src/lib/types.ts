@@ -52,6 +52,8 @@ export interface LessonPlan {
   authorName: string;
   authorHandle: string | null;
   authorRole: UserRole;
+  layoutTemplateId?: string | null;
+  layoutContent?: Record<string, unknown>;
   status: LessonPlanStatus;
   moderationState: ModerationState;
   title: string;
