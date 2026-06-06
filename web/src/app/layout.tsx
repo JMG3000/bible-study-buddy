@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SessionTimeout } from "@/components/session-timeout";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { env } from "@/lib/env";
 import { siteConfig } from "@/lib/site";
 import "./globals.css";
 
@@ -46,15 +44,19 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const shouldLoadMeticulousRecorder =
+    process.env.NODE_ENV === "development" ||
+    process.env.VERCEL_ENV === "preview";
 
   return (
     <html lang="en">
       <head>
-        {env.meticulousProjectId ? (
-          <Script
+        {shouldLoadMeticulousRecorder ? (
+          // eslint-disable-next-line @next/next/no-sync-scripts
+          <script
             nonce={nonce}
-            strategy="beforeInteractive"
-            data-project-id={env.meticulousProjectId}
+            data-recording-token="u2BTxZebp25gE1KL3nY6TVVHHpurcP950ZOUqVH9"
+            data-is-production-environment="false"
             src="https://snippet.meticulous.ai/v1/meticulous.js"
           />
         ) : null}
