@@ -14,6 +14,7 @@ import type {
   LessonReportAccess,
   LessonPlan,
   LessonPlanFilters,
+  PrintedLessonLog,
   Report,
   ReportReviewDetail,
   ReportReviewMessage,
@@ -129,6 +130,21 @@ interface ReportMessageRow {
   author_id: string;
   body: string;
   created_at: string;
+}
+
+interface PrintedLessonLogRow {
+  id: string;
+  lesson_plan_id: string | null;
+  lesson_slug_snapshot: string | null;
+  lesson_title_snapshot: string;
+  print_title: string;
+  print_summary: string;
+  print_payload: Record<string, unknown> | null;
+  layout_template_id: string | null;
+  layout_content: Record<string, unknown> | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ViewerContext {
@@ -323,6 +339,22 @@ function isMissingReportReviewFeatureError(error: {
     error.message?.includes("report_review_messages") === true ||
     error.message?.includes("assigned_reviewer_id") === true ||
     error.message?.includes("resolution_note") === true
+  );
+}
+
+export function isMissingPrintedLessonLogsError(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "PGRST204" ||
+    error.code === "PGRST205" ||
+    error.code === "42P01" ||
+    error.message?.includes("printed_lesson_logs") === true
   );
 }
 
@@ -1126,6 +1158,74 @@ export async function getSavedPlans() {
   return plans.sort((left, right) => {
     return (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0);
   });
+}
+
+export async function getPrintedLessonLogs(): Promise<PrintedLessonLog[]> {
+  const viewer = await getCurrentViewer();
+  const supabase = await createSupabaseServerClient();
+
+  if (!viewer || !supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("printed_lesson_logs")
+    .select(
+      "id, lesson_plan_id, lesson_slug_snapshot, lesson_title_snapshot, print_title, print_summary, print_payload, layout_template_id, layout_content, archived_at, created_at, updated_at",
+    )
+    .eq("user_id", viewer.userId)
+    .is("archived_at", null)
+    .order("updated_at", { ascending: false });
+
+  if (isMissingPrintedLessonLogsError(error)) {
+    return [];
+  }
+
+  return ((data as PrintedLessonLogRow[] | null) ?? []).map(mapPrintedLessonLogRow);
+}
+
+function mapPrintedLessonLogRow(row: PrintedLessonLogRow): PrintedLessonLog {
+  return {
+    id: row.id,
+    lessonPlanId: row.lesson_plan_id,
+    lessonSlug: row.lesson_slug_snapshot,
+    lessonTitle: row.lesson_title_snapshot,
+    printTitle: row.print_title,
+    printSummary: row.print_summary,
+    printPayload: row.print_payload ?? {},
+    layoutTemplateId: row.layout_template_id,
+    layoutContent: row.layout_content ?? {},
+    archivedAt: row.archived_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getPrintedLessonLogById(
+  id: string,
+): Promise<PrintedLessonLog | null> {
+  const viewer = await getCurrentViewer();
+  const supabase = await createSupabaseServerClient();
+
+  if (!viewer || !supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("printed_lesson_logs")
+    .select(
+      "id, lesson_plan_id, lesson_slug_snapshot, lesson_title_snapshot, print_title, print_summary, print_payload, layout_template_id, layout_content, archived_at, created_at, updated_at",
+    )
+    .eq("id", id)
+    .eq("user_id", viewer.userId)
+    .is("archived_at", null)
+    .maybeSingle();
+
+  if (isMissingPrintedLessonLogsError(error) || !data) {
+    return null;
+  }
+
+  return mapPrintedLessonLogRow(data as PrintedLessonLogRow);
 }
 
 export async function isLessonPlanSavedForViewer(

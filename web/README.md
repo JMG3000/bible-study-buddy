@@ -1,51 +1,73 @@
-# Bible Study Buddy: Free
+# Bible Study Buddy: Free Web App
 
-Bible Study Buddy: Free is a `Next.js` application for creating, sharing,
-browsing, printing, and moderating Bible study lesson plans. This repo now
-includes:
+This directory contains the Next.js application for Bible Study Buddy: Free.
 
-- a public catalog and lesson detail flow
-- creator dashboard routes
-- an admin moderation queue
-- print-ready lesson pages
-- Supabase schema and RLS migration files
-- a webhook revalidation endpoint for Vercel/Next cache invalidation
-- live Supabase-backed read helpers for public and authenticated pages
+## Stack
+
+- Next.js App Router
+- TypeScript
+- Supabase Auth and Postgres
+- Supabase SSR helpers
+- Server actions for private and authenticated workflows
 
 ## Run locally
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
-Copy `.env.example` to `.env.local` when you are ready to connect Supabase and
-the optional scripture tooltip provider.
+Open `http://localhost:3000`.
 
-## Routes
+## Docker
 
-- `/`
-- `/plans`
-- `/plans/[slug]`
-- `/create`
-- `/dashboard`
-- `/dashboard/plans/[id]`
-- `/dashboard/saved`
-- `/admin/reports`
-- `/api/revalidate/supabase`
+From the repository root:
 
-## Data and backend
+```bash
+docker compose up --build
+```
 
-- The production schema lives in `supabase/migrations/0001_initial_schema.sql`.
-- `src/lib/supabase` contains the client bootstrapping helpers.
-- `src/lib/lesson-plans.ts` reads from Supabase when `.env.local` is configured.
-- Without Supabase environment variables, public pages fall back to empty-state
-  messaging instead of mock data.
+Or from this directory:
 
-## Next implementation steps
+```bash
+docker build -t bible-study-buddy-free-web .
+docker run --env-file .env.local -p 3000:3000 bible-study-buddy-free-web
+```
 
-1. Provision a Supabase project and fill in `.env.local`.
-2. Apply the SQL migration.
-3. Wire auth into dashboard and admin route protection.
-4. Add server actions for draft save, publish, favorite, and report flows.
-5. Connect scripture tooltip configuration and deployment secrets.
+## Key routes
+
+- `/` - home page
+- `/plans` - public catalog
+- `/plans/[slug]` - published lesson detail, favorites, reports, and print flow
+- `/series/[slug]` - public study series
+- `/create` - authenticated lesson draft creation
+- `/dashboard` - creator workspace
+- `/dashboard/plans/[id]` - owner-only lesson editing and publishing
+- `/dashboard/layouts` - layout template library
+- `/dashboard/printed` - private saved print logs
+- `/dashboard/saved` - private saved lessons
+- `/admin/reports` - reviewer/admin moderation queue
+- `/admin/users` - admin user management
+
+## Supabase migrations
+
+Migration files live in `supabase/migrations/`.
+
+Run them in filename order. When a migration adds enum values, run that file by
+itself before running any later migration that uses the new enum values.
+
+## Scripts
+
+```bash
+npm run dev
+npm run lint
+npm run typecheck
+npm run build
+```
+
+## Notes
+
+- Public pages are designed to stay browseable without sign-in.
+- Creator, dashboard, admin, settings, and auth routes are marked noindex.
+- Private print logs are stored as user-owned snapshots and are not public.

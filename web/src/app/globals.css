@@ -179,6 +179,14 @@ img {
   display: inline-flex;
 }
 
+.hero-actions {
+  margin-top: 1.6rem;
+}
+
+.scripture-focus-list {
+  margin-top: 0.85rem;
+}
+
 .site-nav {
   gap: 0.5rem;
 }
@@ -314,6 +322,19 @@ img {
 
 .section-title {
   font-size: clamp(1.4rem, 2vw, 1.9rem);
+}
+
+.saved-handout-preview {
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.saved-handout-section {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.saved-handout-section .body-copy {
+  white-space: pre-wrap;
 }
 
 .lede,

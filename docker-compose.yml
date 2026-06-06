@@ -1,0 +1,11 @@
+services:
+  web:
+    build:
+      context: ./web
+    env_file:
+      - path: ./web/.env.local
+        required: false
+    environment:
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    ports:
+      - "3000:3000"

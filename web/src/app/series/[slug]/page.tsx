@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   buildCanonicalUrl,
@@ -42,6 +43,7 @@ export async function generateMetadata({
 
 export default async function StudySeriesPage({ params }: PageProps) {
   const { slug } = await params;
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   const series = await getPublishedStudySeriesBySlug(slug);
 
   if (!series) {
@@ -94,6 +96,7 @@ export default async function StudySeriesPage({ params }: PageProps) {
         </div>
 
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: serializeJsonLd(jsonLd),

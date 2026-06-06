@@ -10,6 +10,45 @@ import {
 
 const protectedPrefixes = ["/create", "/dashboard", "/admin", "/settings"];
 
+function buildContentSecurityPolicy(nonce: string) {
+  const isDev = process.env.NODE_ENV === "development";
+  const scriptSources = [
+    "'self'",
+    `'nonce-${nonce}'`,
+    "https://snippet.meticulous.ai",
+    ...(isDev ? ["'unsafe-eval'"] : []),
+  ];
+  const connectSources = [
+    "'self'",
+    "https://*.supabase.co",
+    "https://api.openai.com",
+    "https://*.meticulous.ai",
+  ];
+  const directives = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "form-action 'self'",
+    "img-src 'self' blob: data:",
+    "font-src 'self' data:",
+    `script-src ${scriptSources.join(" ")}`,
+    `style-src 'self' 'nonce-${nonce}'${isDev ? " 'unsafe-inline'" : ""}`,
+    `connect-src ${connectSources.join(" ")}`,
+    "upgrade-insecure-requests",
+  ];
+
+  return directives.join("; ");
+}
+
+function applyContentSecurityPolicy(
+  response: NextResponse,
+  contentSecurityPolicy: string,
+) {
+  response.headers.set("Content-Security-Policy", contentSecurityPolicy);
+  return response;
+}
+
 function isProtectedRoute(pathname: string) {
   return protectedPrefixes.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
@@ -27,11 +66,18 @@ function buildCookieOptions(maxAge: number) {
 }
 
 export async function proxy(request: NextRequest) {
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
+
   let response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: requestHeaders,
     },
   });
+  applyContentSecurityPolicy(response, contentSecurityPolicy);
 
   if (!env.supabaseUrl || !env.supabaseAnonKey) {
     return response;
@@ -46,12 +92,13 @@ export async function proxy(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({
           request: {
-            headers: request.headers,
+            headers: requestHeaders,
           },
         });
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options),
         );
+        applyContentSecurityPolicy(response, contentSecurityPolicy);
       },
     },
   });
@@ -77,15 +124,19 @@ export async function proxy(request: NextRequest) {
   ) {
     const logoutUrl = new URL("/auth/logout", request.url);
     logoutUrl.searchParams.set("reason", "expired");
-    const logoutResponse = NextResponse.redirect(logoutUrl);
+    const logoutResponse = applyContentSecurityPolicy(
+      NextResponse.redirect(logoutUrl),
+      contentSecurityPolicy,
+    );
     logoutResponse.cookies.delete(POST_AUTH_REDIRECT_COOKIE);
     logoutResponse.cookies.delete(IDLE_ACTIVITY_COOKIE);
     return logoutResponse;
   }
 
   if (request.nextUrl.pathname === "/login" && isAuthenticated) {
-    const loginRedirect = NextResponse.redirect(
-      new URL(currentRedirectPath, request.url),
+    const loginRedirect = applyContentSecurityPolicy(
+      NextResponse.redirect(new URL(currentRedirectPath, request.url)),
+      contentSecurityPolicy,
     );
     loginRedirect.cookies.delete(POST_AUTH_REDIRECT_COOKIE);
     loginRedirect.cookies.set(
@@ -98,7 +149,10 @@ export async function proxy(request: NextRequest) {
 
   if (isProtectedRoute(request.nextUrl.pathname) && !isAuthenticated) {
     const loginUrl = new URL("/login", request.url);
-    const loginResponse = NextResponse.redirect(loginUrl);
+    const loginResponse = applyContentSecurityPolicy(
+      NextResponse.redirect(loginUrl),
+      contentSecurityPolicy,
+    );
     loginResponse.cookies.set(
       POST_AUTH_REDIRECT_COOKIE,
       nextPath,

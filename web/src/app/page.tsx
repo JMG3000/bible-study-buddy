@@ -25,7 +25,7 @@ export default async function HomePage() {
               session rooted in Scripture.
             </p>
 
-            <div className="inline-actions" style={{ marginTop: "1.6rem" }}>
+            <div className="inline-actions hero-actions">
               <Link href="/plans" className="button">
                 Browse lesson plans
               </Link>

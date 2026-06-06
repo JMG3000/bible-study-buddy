@@ -210,6 +210,21 @@ export interface ReportReviewDetail {
   messages: ReportReviewMessage[];
 }
 
+export interface PrintedLessonLog {
+  id: string;
+  lessonPlanId: string | null;
+  lessonSlug: string | null;
+  lessonTitle: string;
+  printTitle: string;
+  printSummary: string;
+  printPayload: Record<string, unknown>;
+  layoutTemplateId: string | null;
+  layoutContent: Record<string, unknown>;
+  archivedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface LessonReportAccess {
   canSubmit: boolean;
   status: ReportStatus | "cooldown" | null;

@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { env } from "@/lib/env";
 
-export function ScriptureTooltipEnhancer() {
+export function ScriptureTooltipEnhancer({ nonce }: { nonce?: string }) {
   if (
     env.scriptureTooltipMode === "off" ||
     !env.scriptureTooltipScript.trim()
@@ -14,6 +14,7 @@ export function ScriptureTooltipEnhancer() {
   return (
     <Script
       src={env.scriptureTooltipScript}
+      nonce={nonce}
       strategy="afterInteractive"
       data-mode={env.scriptureTooltipMode}
     />

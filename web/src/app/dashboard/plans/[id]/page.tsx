@@ -420,8 +420,8 @@ export default async function DashboardPlanPage({
               <h2 className="section-title">Discussion questions</h2>
               {plan.discussionQuestions.length > 0 ? (
                 <ol className="numbered-list">
-                  {plan.discussionQuestions.map((question) => (
-                    <li key={question} className="list-copy">
+                  {plan.discussionQuestions.map((question, index) => (
+                    <li key={`${index}-${question}`} className="list-copy">
                       {question}
                     </li>
                   ))}

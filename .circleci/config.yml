@@ -1,0 +1,97 @@
+version: 2.1
+
+executors:
+  node:
+    docker:
+      - image: cimg/node:24.11.1-browsers
+    working_directory: ~/project
+
+commands:
+  restore_web_cache:
+    steps:
+      - restore_cache:
+          keys:
+            - v1-web-npm-{{ checksum "web/package-lock.json" }}
+            - v1-web-npm-
+  install_web_dependencies:
+    steps:
+      - run:
+          name: Install web dependencies
+          command: cd web && npm ci
+  save_web_cache:
+    steps:
+      - save_cache:
+          key: v1-web-npm-{{ checksum "web/package-lock.json" }}
+          paths:
+            - ~/.npm
+
+jobs:
+  validate:
+    executor: node
+    steps:
+      - checkout
+      - restore_web_cache
+      - install_web_dependencies
+      - save_web_cache
+      - run:
+          name: Lint
+          command: cd web && npm run lint
+      - run:
+          name: Typecheck
+          command: cd web && npm run typecheck
+      - run:
+          name: Build
+          command: cd web && npm run build
+      - run:
+          name: Dependency audit
+          command: cd web && npm audit --audit-level=moderate
+
+  meticulous:
+    executor: node
+    steps:
+      - checkout
+      - restore_web_cache
+      - install_web_dependencies
+      - save_web_cache
+      - run:
+          name: Build Next.js app
+          command: cd web && npm run build
+      - run:
+          name: Prepare Meticulous companion assets
+          command: |
+            rm -rf companion-assets
+            mkdir -p companion-assets/_next
+            cp -r web/.next/static companion-assets/_next/
+            find companion-assets -name "*.map" -delete
+      - run:
+          name: Start app
+          command: |
+            cd web
+            npm run start -- -p 3000 > ../npm-start-meticulous.local.log 2>&1 &
+            npx wait-on http://127.0.0.1:3000 --timeout 60000
+      - run:
+          name: Run Meticulous visual tests
+          command: |
+            npx @alwaysmeticulous/cli ci run-with-tunnel \
+              --apiToken="$METICULOUS_API_TOKEN" \
+              --appUrl="http://127.0.0.1:3000" \
+              --companionAssetsFolder="companion-assets" \
+              --companionAssetsRegex="^/_next/static/"
+
+workflows:
+  validate-and-test:
+    jobs:
+      - validate:
+          filters:
+            branches:
+              only:
+                - dev-test
+                - main
+      - meticulous:
+          requires:
+            - validate
+          filters:
+            branches:
+              only:
+                - dev-test
+                - main

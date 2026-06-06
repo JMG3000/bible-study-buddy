@@ -26,9 +26,11 @@ function hasStoredContent(
 export function LayoutContentView({
   template,
   content,
+  description = "These fields came from the layout used for this lesson.",
 }: {
   template: LayoutTemplate;
   content: Record<string, unknown>;
+  description?: string;
 }) {
   const sections = template.sections
     .map((section) => ({
@@ -45,9 +47,7 @@ export function LayoutContentView({
     <section className="editor-card stack">
       <div className="stack-xs">
         <h2 className="section-title">Layout-specific fields</h2>
-        <p className="body-copy">
-          These fields came from the layout used when this draft was created.
-        </p>
+        <p className="body-copy">{description}</p>
       </div>
 
       <div className="stack">

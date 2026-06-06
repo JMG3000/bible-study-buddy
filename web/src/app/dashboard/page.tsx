@@ -181,6 +181,21 @@ export default async function DashboardPage({
               </div>
             </section>
 
+            <section className="surface-card stack-sm">
+              <div className="stack-sm">
+                <h2 className="section-title">Print Log</h2>
+                <p className="body-copy">
+                  Revisit private handouts you edited before printing.
+                </p>
+              </div>
+
+              <div className="inline-actions">
+                <Link href="/dashboard/printed" className="button-secondary">
+                  Open print log
+                </Link>
+              </div>
+            </section>
+
             <section className="stack">
               <div className="section-head">
                 <div className="stack-sm">

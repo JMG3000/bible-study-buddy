@@ -1,13 +1,16 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   submitLessonReportAction,
   toggleFavoriteAction,
 } from "./actions";
+import { LayoutContentView } from "@/components/layout-content-view";
 import { PrintButton } from "@/components/print-button";
 import { ScripturePill } from "@/components/scripture-pill";
 import { ScriptureTooltipEnhancer } from "@/components/scripture-tooltip-enhancer";
+import { getLessonPlanLayoutTemplate } from "@/lib/layout-templates";
 import {
   buildCanonicalUrl,
   formatDate,
@@ -69,6 +72,7 @@ export async function generateMetadata({
 
 export default async function LessonPlanDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   const [plan, viewer, resolvedSearchParams] = await Promise.all([
     getLessonPlanBySlug(slug),
     getCurrentViewer(),
@@ -83,6 +87,7 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
     isLessonPlanSavedForViewer(plan.id, viewer?.userId),
     getViewerLessonReportAccess(plan.id, viewer?.userId),
   ]);
+  const layoutTemplate = await getLessonPlanLayoutTemplate(plan.layoutTemplateId);
   const reportMessage = readValue(resolvedSearchParams, "report");
   const reportError = readValue(resolvedSearchParams, "reportError");
 
@@ -159,6 +164,7 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
         <div className="detail-grid">
           <div className="detail-main">
             <script
+              nonce={nonce}
               type="application/ld+json"
               dangerouslySetInnerHTML={{
                 __html: serializeJsonLd(jsonLd),
@@ -167,16 +173,11 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
 
             <div className="detail-section">
               <h2>Scripture focus</h2>
-              <div className="detail-scriptures" style={{ marginTop: "0.85rem" }}>
+              <div className="detail-scriptures scripture-focus-list">
                 {plan.scriptures.map((scripture) => (
                   <ScripturePill key={scripture.id} scripture={scripture} />
                 ))}
               </div>
-              <p className="body-copy" style={{ marginTop: "1rem" }}>
-                This detail page is ready for progressive-enhancement scripture
-                tooltips. If no external provider is configured, the references
-                still work as plain outbound Bible links.
-              </p>
             </div>
 
             <div className="detail-section">
@@ -201,8 +202,8 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
             <div className="detail-section">
               <h2>Discussion questions</h2>
               <ol className="numbered-list">
-                {plan.discussionQuestions.map((question) => (
-                  <li key={question} className="list-copy">
+                {plan.discussionQuestions.map((question, index) => (
+                  <li key={`${index}-${question}`} className="list-copy">
                     {question}
                   </li>
                 ))}
@@ -212,8 +213,8 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
             <div className="detail-section">
               <h2>Activities and next steps</h2>
               <ul className="bullet-list">
-                {plan.activities.map((activity) => (
-                  <li key={activity} className="list-copy">
+                {plan.activities.map((activity, index) => (
+                  <li key={`${index}-${activity}`} className="list-copy">
                     {activity}
                   </li>
                 ))}
@@ -237,6 +238,13 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
                 <p className="body-copy">{plan.facilitatorNotes}</p>
               </div>
             ) : null}
+
+            {layoutTemplate ? (
+              <LayoutContentView
+                template={layoutTemplate}
+                content={plan.layoutContent ?? {}}
+              />
+            ) : null}
           </div>
 
           <aside className="detail-sidebar-card surface-card">
@@ -253,7 +261,11 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
                     : "Sign in to save to favorites"}
                 </button>
               </form>
-              <PrintButton plan={plan} />
+              <PrintButton
+                plan={plan}
+                layoutTemplate={layoutTemplate}
+                canSavePrintLog={Boolean(viewer)}
+              />
             </div>
 
             <div className="stack-sm no-print">
@@ -390,7 +402,7 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
           </aside>
         </div>
 
-        <ScriptureTooltipEnhancer />
+        <ScriptureTooltipEnhancer nonce={nonce} />
       </div>
     </section>
   );

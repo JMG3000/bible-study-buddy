@@ -30,7 +30,7 @@ create or replace function private.can_review_reports()
 returns boolean
 language sql
 security definer
-set search_path = public, private, pg_temp
+set search_path = public, private
 as $$
   select exists (
     select 1

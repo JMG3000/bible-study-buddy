@@ -1,30 +1,40 @@
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_enum
-    where enumlabel = 'reviewer'
-      and enumtypid = 'public.user_role'::regtype
-  ) then
-    alter type public.user_role add value 'reviewer';
-  end if;
-end
-$$;
+alter table public.profiles
+alter column role set default 'user';
 
-do $$
-begin
-  if not exists (
+update public.profiles p
+set role = case
+  when p.role::text in ('admin', 'reviewer', 'webmaster_supreme') then p.role
+  when exists (
     select 1
-    from pg_enum
-    where enumlabel = 'webmaster_supreme'
-      and enumtypid = 'public.user_role'::regtype
-  ) then
-    alter type public.user_role add value 'webmaster_supreme';
-  end if;
-end
-$$;
+    from public.lesson_plans lp
+    where lp.author_id = p.user_id
+  ) then 'creator'::public.user_role
+  else 'user'::public.user_role
+end;
+
+drop policy if exists "profiles_insert_own_or_admin" on public.profiles;
+create policy "profiles_insert_own_or_admin"
+on public.profiles
+for insert
+with check (
+  public.is_admin()
+  or (auth.uid() = user_id and role::text = 'user')
+);
 
 create schema if not exists private;
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    public.current_profile_role()::text in ('admin', 'webmaster_supreme'),
+    false
+  )
+$$;
 
 create or replace function private.can_review_reports()
 returns boolean
@@ -74,6 +84,16 @@ begin
   return null;
 end;
 $$;
+
+drop trigger if exists lesson_plans_sync_profile_role_after_insert on public.lesson_plans;
+create trigger lesson_plans_sync_profile_role_after_insert
+after insert on public.lesson_plans
+for each row execute function private.sync_profile_role_from_lessons();
+
+drop trigger if exists lesson_plans_sync_profile_role_after_delete on public.lesson_plans;
+create trigger lesson_plans_sync_profile_role_after_delete
+after delete on public.lesson_plans
+for each row execute function private.sync_profile_role_from_lessons();
 
 alter table public.reports
   add column if not exists assigned_reviewer_id uuid references public.profiles(user_id) on delete set null,
@@ -141,6 +161,7 @@ after insert on public.report_review_messages
 for each row execute function public.touch_report_review_thread();
 
 drop policy if exists "reports_select_reporter_or_admin" on public.reports;
+drop policy if exists "reports_select_participants_or_reviewers" on public.reports;
 create policy "reports_select_participants_or_reviewers"
 on public.reports
 for select
@@ -157,6 +178,7 @@ using (
 );
 
 drop policy if exists "reports_update_admin_only" on public.reports;
+drop policy if exists "reports_update_reviewer_or_admin" on public.reports;
 create policy "reports_update_reviewer_or_admin"
 on public.reports
 for update
@@ -182,10 +204,7 @@ for insert
 to authenticated
 with check (
   public.is_admin()
-  or (
-    (select private.can_review_reports())
-    and reviewer_id = auth.uid()
-  )
+  or ((select private.can_review_reports()) and reviewer_id = auth.uid())
 );
 
 drop policy if exists "report_review_threads_update_reviewer_or_admin" on public.report_review_threads;
@@ -195,17 +214,11 @@ for update
 to authenticated
 using (
   public.is_admin()
-  or (
-    (select private.can_review_reports())
-    and reviewer_id = auth.uid()
-  )
+  or ((select private.can_review_reports()) and reviewer_id = auth.uid())
 )
 with check (
   public.is_admin()
-  or (
-    (select private.can_review_reports())
-    and reviewer_id = auth.uid()
-  )
+  or ((select private.can_review_reports()) and reviewer_id = auth.uid())
 );
 
 drop policy if exists "report_review_threads_delete_reviewer_or_admin" on public.report_review_threads;
@@ -215,10 +228,7 @@ for delete
 to authenticated
 using (
   public.is_admin()
-  or (
-    (select private.can_review_reports())
-    and reviewer_id = auth.uid()
-  )
+  or ((select private.can_review_reports()) and reviewer_id = auth.uid())
 );
 
 drop policy if exists "report_review_messages_select_thread_participants" on public.report_review_messages;
@@ -234,10 +244,7 @@ using (
       and (
         rrt.creator_id = auth.uid()
         or public.is_admin()
-        or (
-          (select private.can_review_reports())
-          and rrt.reviewer_id = auth.uid()
-        )
+        or ((select private.can_review_reports()) and rrt.reviewer_id = auth.uid())
       )
   )
 );
@@ -256,10 +263,7 @@ with check (
       and (
         rrt.creator_id = auth.uid()
         or public.is_admin()
-        or (
-          (select private.can_review_reports())
-          and rrt.reviewer_id = auth.uid()
-        )
+        or ((select private.can_review_reports()) and rrt.reviewer_id = auth.uid())
       )
   )
 );
