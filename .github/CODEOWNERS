@@ -1,0 +1,9 @@
+# Require owner review for security-sensitive project surfaces when branch protection enables CODEOWNERS.
+* @JMG3000
+
+/.github/ @JMG3000
+/web/package.json @JMG3000
+/web/package-lock.json @JMG3000
+/web/supabase/ @JMG3000
+/web/src/proxy.ts @JMG3000
+/web/src/lib/env.ts @JMG3000
