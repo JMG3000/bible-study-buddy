@@ -20,6 +20,10 @@ export const env = {
     process.env.NEXT_PUBLIC_SCRIPTURE_TOOLTIP_MODE ?? "off",
   scriptureTooltipScript:
     process.env.NEXT_PUBLIC_SCRIPTURE_TOOLTIP_SCRIPT_URL ?? "",
+  meticulousProjectId:
+    process.env.NEXT_PUBLIC_METICULOUS_PROJECT_ID ??
+    process.env.METICULOUS_PROJECT_ID ??
+    "",
 };
 
 export function isSupabaseConfigured() {

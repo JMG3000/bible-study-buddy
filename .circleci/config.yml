@@ -56,6 +56,8 @@ jobs:
       - run:
           name: Build Next.js app
           command: cd web && npm run build
+          environment:
+            NEXT_PUBLIC_ENABLE_METICULOUS_RECORDER: "true"
       - run:
           name: Prepare Meticulous companion assets
           command: |
@@ -69,6 +71,8 @@ jobs:
             cd web
             npm run start -- -p 3000 > ../npm-start-meticulous.local.log 2>&1 &
             npx wait-on http://127.0.0.1:3000 --timeout 60000
+          environment:
+            NEXT_PUBLIC_ENABLE_METICULOUS_RECORDER: "true"
       - run:
           name: Run Meticulous visual tests
           command: |

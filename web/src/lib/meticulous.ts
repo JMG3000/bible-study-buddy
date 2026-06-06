@@ -5,7 +5,7 @@ const METICULOUS_SIMULATED_DATE_HEADER = "meticulous-simulated-date";
 
 export async function isMeticulousTestRequest() {
   const headerStore = await headers();
-  return headerStore.get(METICULOUS_IS_TEST_HEADER) === "true";
+  return headerStore.get(METICULOUS_IS_TEST_HEADER) === "1";
 }
 
 export async function getCurrentDateForRendering() {
