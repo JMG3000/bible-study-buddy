@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+early_access: false
+reviews:
+  profile: assertive
+    path_instructions:
+    - path: "src/**/*.ts"
+      instructions: "Focus on architecture and system design."
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: true
+  review_status: true
+  review_details: false
+  auto_review:
+    enabled: true
+    drafts: false
+tone_instructions: "Prioritize scalability and long-term maintainability."
+chat:
+  auto_reply: true
