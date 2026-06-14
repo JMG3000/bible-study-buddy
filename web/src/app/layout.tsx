@@ -53,17 +53,19 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head>
-        ...
-        {(process.env.NODE_ENV === "development" || process.env.VERCEL_ENV === "preview") && (
+        {shouldLoadMeticulousRecorder ? (
           // eslint-disable-next-line @next/next/no-sync-scripts
           <script
+            nonce={nonce}
+            data-project-id={env.meticulousProjectId}
             data-recording-token="u2BTxZebp25gE1KL3nY6TVVHHpurcP950ZOUqVH9"
-            data-is-production-environment="false"
+            data-is-production-environment={
+              process.env.VERCEL_ENV === "production" ? "true" : "false"
+            }
             src="https://snippet.meticulous.ai/v1/meticulous.js"
           />
-        )}
-        ...
-      </head>  
+        ) : null}
+      </head>
       <body>
         <SessionTimeout />
         <div className="site-shell">
