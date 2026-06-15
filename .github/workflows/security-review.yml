@@ -15,22 +15,6 @@ permissions:
   contents: read
 
 jobs:
-  dependency-review:
-    name: Dependency review
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Review dependency changes
-        uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: moderate
-
   secret-pattern-scan:
     name: Secret pattern scan
     runs-on: ubuntu-latest
@@ -54,29 +38,3 @@ jobs:
             echo "Potential secret value found in tracked files."
             exit 1
           fi
-
-  scorecard:
-    name: OpenSSF Scorecard
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Run Scorecard
-        uses: ossf/scorecard-action@v2.4.3
-        with:
-          results_file: scorecard-results.sarif
-          results_format: sarif
-          publish_results: false
-
-      - name: Upload Scorecard SARIF
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: scorecard-results.sarif

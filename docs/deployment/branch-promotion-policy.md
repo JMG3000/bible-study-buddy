@@ -10,10 +10,11 @@ Date adopted: 2026-06-05
 ## Promotion Flow
 
 1. Development work is pushed to `dev-test`.
-2. GitHub Actions runs the `Dev Test Gate and Production Promotion` workflow.
-3. The workflow validates lint, typecheck, production build, dependency audit, and CodeQL advanced analysis.
-4. If every gate passes, the workflow fast-forwards `main` to match `dev-test`.
-5. Vercel production should deploy from `main`.
+2. Vercel creates a preview deployment from `dev-test`.
+3. Meticulous connects through the Vercel preview by using the App Router recorder script and the Vercel preview URL.
+4. Local validation remains required before promotion: lint, typecheck, production build, and dependency audit.
+5. If local validation and Vercel/Meticulous preview review pass, promote `main` deliberately.
+6. Vercel production should deploy from `main`.
 
 ## Safety Rules
 
@@ -21,11 +22,14 @@ Date adopted: 2026-06-05
 - Keep `main` protected in GitHub branch protection.
 - If branch protection blocks the default GitHub Actions token from pushing, use that failure as a signal to configure a deliberate production promotion token or require manual approval.
 - Dependabot update pull requests target `dev-test`, not `main`.
+- Automatic GitHub Actions triggers are paused while Actions minutes are unavailable; manual `workflow_dispatch` remains available for targeted checks.
+- CodeQL is disabled for this repository and is not an active promotion gate.
 
 ## Required GitHub Settings
 
-- Enable GitHub Actions for the repository.
+- GitHub Actions can stay available for manual `workflow_dispatch`, but automatic triggers should remain paused until project minutes are available again.
 - Enable Dependabot alerts and Dependabot security updates in repository security settings.
-- Enable CodeQL/code scanning. The repository contains an advanced CodeQL workflow, so avoid enabling a duplicate default CodeQL setup.
-- Add branch protection for `main` requiring status checks from the promotion gate and CodeQL before direct human merges.
+- Do not require CodeQL/code scanning until the repository has code scanning enabled again.
+- Add branch protection for `main` requiring the checks that are actually active for the repository.
 - Confirm Vercel production branch is set to `main`; `dev-test` should remain a preview/development branch.
+- Confirm Meticulous has access to Vercel preview URLs and that `NEXT_PUBLIC_METICULOUS_PROJECT_ID` is configured for Vercel preview environments.

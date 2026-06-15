@@ -7,7 +7,7 @@ Date: 2026-06-05
 - Added Vercel Web Analytics to the App Router root layout.
 - Added Meticulous recorder script wiring for local development and Vercel preview environments, with both recording token and project ID support.
 - Added a deterministic rendering helper for Meticulous simulated-date headers.
-- Added CircleCI validation and Meticulous companion-assets workflow for `dev-test` and `main`.
+- Added CircleCI validation and Meticulous companion-assets workflow for `dev-test` and `main`; as of 2026-06-15, Vercel preview recorder capture is the active Meticulous path.
 
 ## Commands
 
@@ -35,8 +35,8 @@ Local validation passed:
 
 ## Residual Risk
 
-- CircleCI Meticulous run requires `METICULOUS_API_TOKEN` to be configured as a CircleCI secret.
-- GitHub Actions Meticulous gate requires `METICULOUS_API_TOKEN` as a repository secret and `NEXT_PUBLIC_METICULOUS_PROJECT_ID` as a repository variable.
+- CircleCI/GitHub Actions Meticulous runs require `METICULOUS_API_TOKEN`, but CI-driven Meticulous is currently inactive.
+- Vercel preview capture requires `NEXT_PUBLIC_METICULOUS_PROJECT_ID` to be configured for Vercel preview deployments.
 - Recorder capture intentionally loads for development, Vercel preview, or when `NEXT_PUBLIC_ENABLE_METICULOUS_RECORDER=true`. Keep `NEXT_PUBLIC_METICULOUS_PROJECT_ID` configured where recorder capture is expected.
 - Meticulous project settings should keep request stubbing compatible with App Router server components and static assets.
 

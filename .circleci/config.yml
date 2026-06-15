@@ -46,54 +46,10 @@ jobs:
           name: Dependency audit
           command: cd web && npm audit --audit-level=moderate
 
-  meticulous:
-    executor: node
-    steps:
-      - checkout
-      - restore_web_cache
-      - install_web_dependencies
-      - save_web_cache
-      - run:
-          name: Build Next.js app
-          command: cd web && npm run build
-          environment:
-            NEXT_PUBLIC_ENABLE_METICULOUS_RECORDER: "true"
-      - run:
-          name: Prepare Meticulous companion assets
-          command: |
-            rm -rf companion-assets
-            mkdir -p companion-assets/_next
-            cp -r web/.next/static companion-assets/_next/
-            find companion-assets -name "*.map" -delete
-      - run:
-          name: Start app
-          command: |
-            cd web
-            npm run start -- -p 3000 > ../npm-start-meticulous.local.log 2>&1 &
-            npx wait-on http://127.0.0.1:3000 --timeout 60000
-          environment:
-            NEXT_PUBLIC_ENABLE_METICULOUS_RECORDER: "true"
-      - run:
-          name: Run Meticulous visual tests
-          command: |
-            npx @alwaysmeticulous/cli ci run-with-tunnel \
-              --apiToken="$METICULOUS_API_TOKEN" \
-              --appUrl="http://127.0.0.1:3000" \
-              --companionAssetsFolder="companion-assets" \
-              --companionAssetsRegex="^/_next/static/"
-
 workflows:
   validate-and-test:
     jobs:
       - validate:
-          filters:
-            branches:
-              only:
-                - dev-test
-                - main
-      - meticulous:
-          requires:
-            - validate
           filters:
             branches:
               only:
