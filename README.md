@@ -1,4 +1,9 @@
 # Bible Study Buddy: Free
+Dev-Test:
+[![Dependabot Updates](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates/badge.svg?branch=dev-test)](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates)
+
+Main:
+[![Dependabot Updates](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates)
 
 Bible Study Buddy: Free is a Next.js app for creating, publishing, browsing,
 saving, reporting, printing, and organizing Bible study lesson plans.
