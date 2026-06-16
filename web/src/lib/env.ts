@@ -24,6 +24,14 @@ export const env = {
     process.env.NEXT_PUBLIC_METICULOUS_PROJECT_ID ??
     process.env.METICULOUS_PROJECT_ID ??
     "",
+  slackSigningSecret: process.env.SLACK_SIGNING_SECRET,
+  slackAllowedChannelId: process.env.SLACK_ALLOWED_CHANNEL_ID,
+  slackAllowedUserIds: process.env.SLACK_ALLOWED_USER_IDS ?? "",
+  slackBroadcastWebhookUrl: process.env.SLACK_BROADCAST_WEBHOOK_URL,
+  circleciApiToken: process.env.CIRCLECI_API_TOKEN,
+  circleciProjectSlug: process.env.CIRCLECI_PROJECT_SLUG,
+  vercelPreviewDeployHookUrl: process.env.VERCEL_PREVIEW_DEPLOY_HOOK_URL,
+  vercelProductionDeployHookUrl: process.env.VERCEL_PRODUCTION_DEPLOY_HOOK_URL,
 };
 
 export function isSupabaseConfigured() {

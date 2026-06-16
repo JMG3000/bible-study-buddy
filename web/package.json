@@ -32,7 +32,9 @@
     "minimatch@10.2.5": {
       "brace-expansion": "5.0.6"
     },
+    "@babel/core": "7.29.7",
+    "js-yaml": "4.2.0",
     "postcss": "8.5.10",
-    "ws": "8.20.1"
+    "ws": "8.21.0"
   }
 }

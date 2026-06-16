@@ -33,7 +33,12 @@ jobs:
           supabase_service_key='SUPABASE_''SERVICE_ROLE_KEY=.+'
           openai_key='OPENAI_''API_KEY=.+'
           meticulous_token='METICULOUS_''API_TOKEN=.+'
-          secret_pattern="(${supabase_secret_prefix}|${supabase_public_prefix}|${supabase_service_key}|${openai_key}|${meticulous_token})"
+          slack_secret='SLACK_''SIGNING_SECRET=.+'
+          slack_webhook='SLACK_''BROADCAST_WEBHOOK_URL=.+'
+          circleci_token='CIRCLECI_''API_TOKEN=.+'
+          vercel_prefix='VERCEL_'
+          vercel_hook="${vercel_prefix}.*DEPLOY_HOOK_URL=.+"
+          secret_pattern="(${supabase_secret_prefix}|${supabase_public_prefix}|${supabase_service_key}|${openai_key}|${meticulous_token}|${slack_secret}|${slack_webhook}|${circleci_token}|${vercel_hook})"
           if git grep -n -E "${secret_pattern}" -- . ':!web/.env.example'; then
             echo "Potential secret value found in tracked files."
             exit 1

@@ -45,6 +45,46 @@ jobs:
       - run:
           name: Dependency audit
           command: cd web && npm audit --audit-level=moderate
+      - run:
+          name: Broadcast validation success to Slack
+          when: on_success
+          command: |
+            if [ -z "${SLACK_BROADCAST_WEBHOOK_URL:-}" ]; then
+              echo "SLACK_BROADCAST_WEBHOOK_URL is not configured; skipping Slack broadcast."
+              exit 0
+            fi
+
+            payload=$(cat <<JSON
+            {
+              "text": "Bible Study Buddy CircleCI validation passed for ${CIRCLE_BRANCH:-unknown} at ${CIRCLE_SHA1:-unknown}. Build: ${CIRCLE_BUILD_URL:-unavailable}"
+            }
+JSON
+            )
+
+            curl -sS -X POST \
+              -H "Content-Type: application/json" \
+              --data "${payload}" \
+              "${SLACK_BROADCAST_WEBHOOK_URL}"
+      - run:
+          name: Broadcast validation failure to Slack
+          when: on_fail
+          command: |
+            if [ -z "${SLACK_BROADCAST_WEBHOOK_URL:-}" ]; then
+              echo "SLACK_BROADCAST_WEBHOOK_URL is not configured; skipping Slack broadcast."
+              exit 0
+            fi
+
+            payload=$(cat <<JSON
+            {
+              "text": "Bible Study Buddy CircleCI validation failed for ${CIRCLE_BRANCH:-unknown} at ${CIRCLE_SHA1:-unknown}. Build: ${CIRCLE_BUILD_URL:-unavailable}"
+            }
+JSON
+            )
+
+            curl -sS -X POST \
+              -H "Content-Type: application/json" \
+              --data "${payload}" \
+              "${SLACK_BROADCAST_WEBHOOK_URL}"
 
 workflows:
   validate-and-test:
