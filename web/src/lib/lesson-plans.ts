@@ -14,6 +14,7 @@ import type {
   LessonReportAccess,
   LessonPlan,
   LessonPlanFilters,
+  LessonAttribution,
   PrintedLessonLog,
   Report,
   ReportReviewDetail,
@@ -27,6 +28,7 @@ import type {
 
 interface LessonPlanRow {
   id: string;
+  parent_lesson_id?: string | null;
   author_id: string;
   author_handle: string | null;
   layout_template_id?: string | null;
@@ -182,6 +184,37 @@ function normalizeHandleQuery(value: string) {
 
 const LESSON_PLAN_SELECT = `
   id,
+  parent_lesson_id,
+  author_id,
+  author_handle,
+  layout_template_id,
+  layout_content,
+  slug,
+  status,
+  moderation_state,
+  title,
+  summary,
+  teaching_objective,
+  duration_minutes,
+  topic_tags,
+  audience_tags,
+  denomination_tags,
+  custom_tags,
+  opening_prayer,
+  icebreaker,
+  facilitator_notes,
+  materials,
+  activities,
+  discussion_questions,
+  prayer_prompts,
+  handout_urls,
+  published_at,
+  created_at,
+  updated_at
+`;
+
+const PARENT_LEGACY_LESSON_PLAN_SELECT = `
+  id,
   author_id,
   author_handle,
   layout_template_id,
@@ -308,6 +341,20 @@ function isMissingCustomTagsColumnError(error: {
   );
 }
 
+function isMissingParentLessonColumnError(error: {
+  code?: string;
+  message?: string;
+} | null) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "PGRST204" ||
+    error.message?.includes("parent_lesson_id") === true
+  );
+}
+
 function isMissingStudySeriesRelationError(error: {
   code?: string;
   message?: string;
@@ -361,10 +408,12 @@ export function isMissingPrintedLessonLogsError(error: {
 function coerceLessonPlanRows(
   data:
     | LessonPlanRow[]
+    | Array<Omit<LessonPlanRow, "parent_lesson_id">>
     | Array<Omit<LessonPlanRow, "author_handle" | "custom_tags">>
     | Array<Omit<LessonPlanRow, "custom_tags">>
     | null,
   options: {
+    includesParentLessonId: boolean;
     includesAuthorHandle: boolean;
     includesCustomTags: boolean;
   },
@@ -372,6 +421,7 @@ function coerceLessonPlanRows(
   const rows =
     (data as
       | LessonPlanRow[]
+      | Array<Omit<LessonPlanRow, "parent_lesson_id">>
       | Array<Omit<LessonPlanRow, "author_handle" | "custom_tags">>
       | Array<Omit<LessonPlanRow, "custom_tags">>
       | null) ??
@@ -383,6 +433,9 @@ function coerceLessonPlanRows(
 
   return rows.map((row) => ({
     ...row,
+    parent_lesson_id: options.includesParentLessonId
+      ? (row as LessonPlanRow).parent_lesson_id
+      : null,
     author_handle:
       options.includesAuthorHandle
         ? (row as LessonPlanRow).author_handle
@@ -405,10 +458,53 @@ async function runLessonPlanQuery(
     return coerceLessonPlanRows(
       current.data as LessonPlanRow[] | Array<Omit<LessonPlanRow, "custom_tags">> | null,
       {
+        includesParentLessonId: true,
         includesAuthorHandle: true,
         includesCustomTags: true,
       },
     );
+  }
+
+  if (isMissingParentLessonColumnError(current.error)) {
+    const parentLegacy = await buildQuery(PARENT_LEGACY_LESSON_PLAN_SELECT);
+
+    if (!parentLegacy.error) {
+      return coerceLessonPlanRows(
+        parentLegacy.data as
+          | LessonPlanRow[]
+          | Array<Omit<LessonPlanRow, "parent_lesson_id">>
+          | null,
+        {
+          includesParentLessonId: false,
+          includesAuthorHandle: true,
+          includesCustomTags: true,
+        },
+      );
+    }
+
+    if (isMissingCustomTagsColumnError(parentLegacy.error)) {
+      const customTagsLegacy = await buildQuery(LEGACY_LESSON_PLAN_SELECT);
+
+      if (!customTagsLegacy.error) {
+        return coerceLessonPlanRows(
+          customTagsLegacy.data as
+            | LessonPlanRow[]
+            | Array<Omit<LessonPlanRow, "custom_tags">>
+            | null,
+          {
+            includesParentLessonId: false,
+            includesAuthorHandle: true,
+            includesCustomTags: false,
+          },
+        );
+      }
+
+      if (!isMissingAuthorHandleColumnError(customTagsLegacy.error)) {
+        return [];
+      }
+    } else if (!isMissingAuthorHandleColumnError(parentLegacy.error)) {
+      return [];
+    }
   }
 
   if (isMissingCustomTagsColumnError(current.error)) {
@@ -421,6 +517,7 @@ async function runLessonPlanQuery(
           | Array<Omit<LessonPlanRow, "custom_tags">>
           | null,
         {
+          includesParentLessonId: false,
           includesAuthorHandle: true,
           includesCustomTags: false,
         },
@@ -441,6 +538,7 @@ async function runLessonPlanQuery(
       | Array<Omit<LessonPlanRow, "author_handle" | "custom_tags">>
       | null,
     {
+      includesParentLessonId: false,
       includesAuthorHandle: false,
       includesCustomTags: false,
     },
@@ -598,6 +696,7 @@ async function hydrateLessonPlans(
     return {
       id: row.id,
       slug: row.slug,
+      parentLessonId: row.parent_lesson_id ?? null,
       authorId: row.author_id,
       authorName: author?.display_name ?? authorFallback,
       authorHandle: row.author_handle ?? author?.handle ?? null,
@@ -629,6 +728,44 @@ async function hydrateLessonPlans(
       updatedAt: row.updated_at,
     } satisfies LessonPlan;
   });
+}
+
+export async function getPublishedLessonAttributionById(
+  id: string | null | undefined,
+): Promise<LessonAttribution | null> {
+  if (!id) {
+    return null;
+  }
+
+  const supabase = createSupabaseStaticClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("lesson_plans")
+    .select("id, slug, title")
+    .eq("id", id)
+    .eq("status", "published")
+    .not("slug", "is", null)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  const row = data as { id: string; slug: string | null; title: string };
+
+  if (!row.slug) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+  };
 }
 
 async function fetchPublishedPlansRows(filters: LessonPlanFilters = {}) {
