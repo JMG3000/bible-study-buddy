@@ -70,6 +70,12 @@ Required for Supabase-backed features:
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
+Required for deployed environments:
+
+- `NEXT_PUBLIC_SITE_URL` - the deployment's canonical public origin. It drives
+  OAuth callback URLs, metadata, lesson and series sharing URLs, `robots.txt`,
+  `sitemap.xml`, and whether application cookies use the secure flag.
+
 Optional:
 
 - `SUPABASE_WEBHOOK_SECRET`
@@ -89,6 +95,7 @@ ordered migration.
 
 ```bash
 cd web
+npm test
 npm run lint
 npm run typecheck
 npm run build

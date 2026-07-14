@@ -12,18 +12,23 @@ For volatile branch, workflow, deployment, and provider status, use
 
 ## Promotion Gates And Supporting Systems
 
-Mandatory promotion gates are fresh local validation at the promotion SHA plus
-successful Vercel preview and Meticulous recorder review. GitHub Actions and
-CircleCI are supporting automation, not mandatory passing gates while disabled
-or unavailable. Slack is trigger/broadcast transport, not verification.
+The repository contains two provider-gate policies that have not been
+reconciled. The older broad policy requires or explicitly waives local
+validation, CircleCI, CodeRabbit, Vercel, Supabase, and Meticulous. The newer
+2026-07-14 classification below treats local validation, Vercel preview, and
+Meticulous review as mandatory, with the remaining providers as supporting
+evidence or transport. This document preserves that newer classification as
+historical context; it does not make it the governing policy. Merge and
+production promotion remain blocked until maintainers decide which policy
+governs and the resulting gates pass or are explicitly waived.
 
-| Service | Classification | Role | Current status |
+| Service | Newer 2026-07-14 classification (not ratified) | Role | Current status |
 | --- | --- | --- | --- |
 | Local WSL validation | Mandatory promotion gate | From the repository root, run `npm --prefix web test`, `npm --prefix web run lint`, `npm --prefix web run typecheck`, `npm --prefix web run build`, and `npm --prefix web audit --audit-level=moderate`. Use `npm --prefix web ci` for a clean install when required. | Passed 2026-07-14 on the delivery-baseline worktree based on `485e3fb`: 7 tests, lint, typecheck, build, audit, YAML parse, and diff check |
 | Vercel preview | Mandatory promotion gate | Preview deployment verification, preview URL, build status, and runtime signal review. | Live `dev-test` deployment at `485e3fb` reported success; production configuration/settings unverified |
 | Meticulous | Mandatory promotion gate | Visual/session review through the Vercel preview and App Router recorder. | Preview recorder configured; settings and session state unverified |
 | GitHub Actions | Supporting automation | Manual validation, promotion, and secret-pattern scan workflows. | `Dev Test Gate and Production Promotion` manually disabled; `Security Review` active but source is manual-dispatch only; not an available mandatory gate |
-| CircleCI | Supporting automation | Optional duplicate build verification for `dev-test` and `main`. | Heredoc terminators repaired and YAML parsed locally; remote still reports the pre-repair `Unable to parse YAML` state because no push/rerun occurred |
+| CircleCI | Supporting automation | Optional duplicate build verification for `dev-test` and `main`. | At the 2026-07-14 pre-push snapshot, heredoc terminators were repaired and YAML parsed locally while remote status still reported the pre-repair `Unable to parse YAML`; the feature branch is not allowed by the `dev-test`/`main` branch filters |
 | CodeRabbit | Supporting evidence | Code review on PRs and configured review policy through `.coderabbit.yaml`. | Configured in source; settings and review state unverified |
 | Supabase | Supporting release evidence | Database/schema/RLS verification through SQL editor and application smoke checks. | Client/schema integration configured; settings and deployed state unverified |
 | Slack | Transport only | Broadcasts integration status and carries signed DevOps commands. | Endpoint/channel configured; settings and integration state unverified |
@@ -83,6 +88,12 @@ Use this compact format for status updates:
 
 ## Current Policy
 
+- Provider-gate policy is unresolved. Do not infer that provider unavailability
+  narrows the required gate set; maintainers must choose between the older broad
+  provider contract and the newer local-plus-Vercel-plus-Meticulous
+  classification.
+- Merge and production promotion remain blocked pending that decision and
+  satisfaction or explicit waiver of the selected gates.
 - CodeQL is disabled and is not a verification source.
 - GitHub Actions automatic triggers remain disabled in source. The gate workflow
   is also manually disabled in live GitHub state; the Security Review workflow
@@ -91,15 +102,19 @@ Use this compact format for status updates:
   or `dev-test` at `485e3fb`.
 - CircleCI cannot supply supporting validation while its remote status reports
   `Unable to parse YAML`. The source repair passes local YAML and shell checks;
-  record provider validation only after an authorized push and successful run.
+  record provider validation only after the repaired commit reaches `dev-test`
+  or `main`, or maintainers explicitly authorize and configure a manual path
+  that changes or bypasses the filters. A feature-branch push or rerun of an
+  earlier eligible-branch commit cannot validate the repaired configuration.
 - Fresh local validation at the promotion SHA remains required. From the
   repository root, use `npm --prefix web test`, `npm --prefix web run lint`,
   `npm --prefix web run typecheck`, `npm --prefix web run build`, and
   `npm --prefix web audit --audit-level=moderate`; use `npm --prefix web ci`
   when a clean dependency install is required.
 - Vercel preview plus Meticulous recorder review replaces the prior CI-tunnel Meticulous gate.
-- GitHub Actions and CircleCI may add supporting evidence when available, but
-  neither is a mandatory promotion gate in its current unavailable state.
+- Under the newer, unratified classification, GitHub Actions and CircleCI add
+  supporting evidence when available. The older broad policy treats CircleCI
+  as a gate to pass or explicitly waive.
 - Slack may trigger validation and deploy hooks, but it is transport only and
   does not bypass signature verification, channel restrictions, user allowlists,
   or the `confirm` requirement for production.

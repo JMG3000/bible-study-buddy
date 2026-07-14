@@ -26,6 +26,11 @@ This repository is stored on Windows NTFS and executed through WSL. Prefer
 `node_modules` or `.next` directory with Windows Node.js. See
 `../docs/architecture/windows-wsl-filesystem.md`.
 
+For every deployed environment, set `NEXT_PUBLIC_SITE_URL` to that
+environment's canonical public origin. The value controls OAuth callback URLs,
+metadata, lesson and series sharing URLs, `robots.txt`, `sitemap.xml`, and
+whether application cookies use the secure flag.
+
 ## Docker
 
 From the repository root:
@@ -69,6 +74,7 @@ The current tracked sequence ends at `0020_add_lesson_remix_parent.sql`.
 
 ```bash
 npm run dev
+npm test
 npm run lint
 npm run typecheck
 npm run build

@@ -12,7 +12,8 @@ volatile branch, workflow, deployment, and provider-status observations.
 - `dev-test` is the development and testing branch.
 - `main` is the production branch and should remain the branch Vercel uses for production deployments.
 - Live refs reviewed on 2026-07-14: `dev-test` at `485e3fb`; `main` at
-  `082c731`. The controlled local branch equals live `origin/dev-test`.
+  `082c731`. The controlled local branch `codex/restore-delivery-baseline` is
+  based on live `origin/dev-test` at `485e3fb` and is ahead.
 
 ## Promotion Flow
 
@@ -25,8 +26,10 @@ volatile branch, workflow, deployment, and provider-status observations.
    `npm --prefix web audit --audit-level=moderate`; use `npm --prefix web ci`
    when a clean install is required. The delivery-baseline worktree passed this
    local gate set on 2026-07-14.
-5. If local validation and Vercel/Meticulous preview review pass, promote `main` deliberately.
-6. Vercel production should deploy from `main`.
+5. Resolve the provider-gate governance disagreement documented below.
+6. Only after the agreed gates pass or are explicitly waived, merge and promote
+   `main` deliberately.
+7. Vercel production should deploy from `main`.
 
 ## Safety Rules
 
@@ -43,10 +46,17 @@ volatile branch, workflow, deployment, and provider-status observations.
 - CircleCI cannot supply supporting validation while its remote status is
   `Unable to parse YAML`. The heredoc terminators at `.circleci/config.yml:61`
   and `.circleci/config.yml:81` are repaired locally and local YAML/shell checks
-  pass; provider execution remains unverified until an authorized push/rerun.
-- GitHub Actions and CircleCI are supporting automation, not mandatory passing
-  gates while disabled or unavailable. Slack is transport only. Mandatory gates
-  remain fresh local validation plus Vercel preview/Meticulous review.
+  pass; provider execution remains unverified until the repaired commit reaches
+  a CircleCI-eligible branch (`dev-test` or `main`), or maintainers explicitly
+  authorize and configure a manual path that changes or bypasses the filters.
+- Provider-gate policy remains unresolved. The older broad policy requires or
+  explicitly waives local validation, CircleCI, CodeRabbit, Vercel, Supabase,
+  and Meticulous; the newer classification treats local validation plus Vercel
+  preview and Meticulous review as mandatory, with the other providers as
+  supporting evidence. This document does not select either policy.
+- Merge and production promotion remain blocked until maintainers decide the
+  governing provider-gate policy and the resulting gates pass or are explicitly
+  waived.
 - CodeQL is disabled for this repository and is not an active promotion gate.
 
 ## Required GitHub Settings

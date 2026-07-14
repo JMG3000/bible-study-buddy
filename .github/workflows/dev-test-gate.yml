@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Build, lint, typecheck, and audit
+    name: Test, lint, typecheck, build, and audit
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -42,6 +42,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Test
+        run: npm test
 
       - name: Lint
         run: npm run lint

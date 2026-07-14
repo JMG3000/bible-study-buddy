@@ -5,8 +5,9 @@ Timestamp: 2026-07-14
 ## Executive Status
 
 - Overall: **NTFS target reconstructed; controlled branch based on live
-  `origin/dev-test`; local delivery gates pass; CircleCI source repaired locally;
-  provider settings remain unverified**.
+  `origin/dev-test` and ahead by two existing commits before this reconciliation;
+  local delivery gates pass; provider-gate governance remains unresolved;
+  merge and production promotion are blocked**.
 - Canonical Windows checkout:
   `C:\Users\LattePanda\Documents\BSB-Windows`.
 - Canonical WSL checkout:
@@ -14,8 +15,12 @@ Timestamp: 2026-07-14
 - Host filesystem: Windows 11 `C:` NTFS volume.
 - WSL filesystem view: DrvFS/9P (`v9fs` reported by Linux filesystem tools).
 - Repository: `JMG3000/bible-study-buddy`.
-- Controlled branch: `codex/restore-delivery-baseline`, based on `485e3fb`,
-  which equaled live `origin/dev-test` after fetch.
+- Controlled branch: `codex/restore-delivery-baseline`, based on live
+  `origin/dev-test` at `485e3fb` and ahead by two existing delivery-baseline
+  commits before this reconciliation.
+- Pre-push snapshot before this reconciliation: no
+  `origin/codex/restore-delivery-baseline` remote branch existed and the feature
+  branch had not been pushed.
 - Previous local `dev-test` HEAD: `52057e4` (`feat: add lesson duplication and
   remix attribution`), two commits behind live `origin/dev-test`.
 - The fetch advanced `origin/dev-test` through `197c1b1` (`actions/checkout` v7)
@@ -38,6 +43,8 @@ Timestamp: 2026-07-14
   directory. Do not edit both copies.
 - Filesystem architecture and path hazards are documented in
   `docs/architecture/windows-wsl-filesystem.md`.
+- `.codex/config.toml` is excluded locally through repository-local Git exclude
+  metadata. Its contents are intentionally not recorded here.
 
 ## Local System Inventory
 
@@ -54,7 +61,7 @@ Timestamp: 2026-07-14
 | Build output | Next.js 16.2.9/Turbopack production output generated from the delivery-baseline worktree | Verified locally on 2026-07-14 |
 | Docker | `docker-compose.yml` and `web/Dockerfile` present | Configured; not run |
 | GitHub Actions | Two source workflows with manual dispatch only | `Dev Test Gate and Production Promotion` manually disabled; `Security Review` active |
-| CircleCI | `.circleci/config.yml` intends to validate `dev-test` and `main`; heredoc indentation repaired and YAML parsed locally | Remote still reports the pre-repair `Unable to parse YAML` state; no push or rerun authorized |
+| CircleCI | `.circleci/config.yml` validates only `dev-test` and `main`; heredoc indentation repaired and YAML parsed locally | At the pre-push snapshot, remote still reported the pre-repair `Unable to parse YAML` state; the feature branch is excluded by branch filters |
 | CodeRabbit | `.coderabbit.yaml` present | Configured; provider settings unverified |
 
 ## Application Status
@@ -102,9 +109,13 @@ readiness. They remain available in Git history.
 - `main` remains the intended Vercel production branch; live `origin/main` is
   `082c731`.
 - The controlled local branch `codex/restore-delivery-baseline` was created from
-  live `origin/dev-test` at `485e3fb`; delivery-baseline changes remain local.
+  live `origin/dev-test` at `485e3fb`. At the pre-push snapshot, its two existing
+  delivery-baseline commits and this reconciliation remained local.
 - Automatic GitHub Actions `push`, `pull_request`, and scheduled triggers remain
   commented out in both tracked workflows.
+- The validation job now runs `npm test` after `npm ci` and before lint,
+  typecheck, and build. Automatic triggers remain disabled, source remains
+  manual-dispatch only, and the live gate workflow remains manually disabled.
 - Both workflows retain `workflow_dispatch` in source. In live GitHub state,
   `Dev Test Gate and Production Promotion` is manually disabled; `Security
   Review` is active but its source triggers are manual-dispatch only.
@@ -116,11 +127,19 @@ readiness. They remain available in Git history.
 - CircleCI still reports the pre-repair `Unable to parse YAML` remote state.
   Locally, the invalid heredoc terminators at `.circleci/config.yml:61` and
   `.circleci/config.yml:81` were indented into their YAML block scalars; local
-  YAML parsing and shell syntax checks pass. No push or remote rerun occurred.
+  YAML parsing and shell syntax checks pass. At the pre-push snapshot, no remote
+  rerun had occurred.
+- `.circleci/config.yml` branch filters allow only `dev-test` and `main`.
+  Pushing `codex/restore-delivery-baseline` will not trigger CircleCI, so the
+  feature-branch remote observation cannot prove CircleCI execution or its
+  `npm test` step. This remains an external validation and governance gap; the
+  filters are unchanged because changing them is outside this reconciliation.
 - GitHub/CircleCI commit status and Vercel commit status were queried. The
   Vercel deployment associated with live `dev-test` reported success.
-- Production promotion remains a deliberate fast-forward after local and
-  preview verification.
+- The older broad provider policy and newer local-plus-Vercel-plus-Meticulous
+  classification disagree about mandatory gates. This remains an unresolved
+  governance decision; merge and production promotion are blocked until
+  maintainers choose a policy and its gates pass or are explicitly waived.
 
 ## Provider And Integration Status
 
@@ -129,7 +148,7 @@ readiness. They remain available in Git history.
 | Supabase | Clients, environment contract, migrations, RLS, and webhook route configured | Settings and deployed state unverified |
 | Vercel | Deployment model, analytics, env contract, and deploy hooks configured | Live `dev-test` deployment reported success; production configuration/settings unverified |
 | Meticulous | Preview recorder integration configured; production recording disabled by policy | Settings and session state unverified |
-| CircleCI | Validation pipeline and Slack broadcast path configured; YAML repaired and parsed locally | Queried remote state remains `Unable to parse YAML`; no push/rerun occurred |
+| CircleCI | Validation pipeline and Slack broadcast path configured; YAML repaired and parsed locally; branch filters allow only `dev-test` and `main` | At the pre-push snapshot, queried remote state remained `Unable to parse YAML`; feature-branch pushes are filtered out |
 | CodeRabbit | Review policy configured | Settings and review state unverified |
 | Slack | Signed command endpoint and project channel ID configured | Settings and channel/integration state unverified |
 | GitHub Actions | Source workflows are manual-dispatch only | Gate workflow manually disabled; Security Review active; other settings unverified |
@@ -152,23 +171,33 @@ readiness. They remain available in Git history.
 
 ## Current Blockers And Decisions
 
-1. Review the local delivery-baseline commits; authorize a push separately only
-   if remote CircleCI and preview validation should begin.
-2. After an authorized push, verify CircleCI parses and executes the repaired
-   configuration; local parsing does not prove provider execution.
+1. Complete the currently authorized one-shot push of
+   `codex/restore-delivery-baseline` and observe available feature-branch remote
+   status without merging or promoting production.
+2. Treat the expected absence of a CircleCI run as inconclusive: feature-branch
+   pushes are filtered out, so proving the repaired configuration and `npm test`
+   requires the repaired commit to reach `dev-test` or `main`, or an explicitly
+   authorized and configured manual path that changes or bypasses the filters.
+   Rerunning an earlier eligible-branch commit cannot validate the repair.
 3. Decide whether to enable `Dev Test Gate and Production Promotion`, and add
    deliberate protection for `main` and `dev-test` before relying on branch
    gates.
-4. Verify production Vercel configuration plus Supabase, Slack, Meticulous,
+4. Resolve the mandatory-provider policy disagreement between the older broad
+   gate list and newer local-plus-Vercel-plus-Meticulous classification; do not
+   merge or promote to production before that decision.
+5. Verify production Vercel configuration plus Supabase, Slack, Meticulous,
    OAuth, CodeRabbit, and remaining provider settings before production
    promotion.
-5. Decommission the legacy `/mnt/d/...` checkout only after NTFS validation and
+6. Decommission the legacy `/mnt/d/...` checkout only after NTFS validation and
    explicit deletion approval.
 
 ## Next Recommended Action
 
-Review the local commits in the canonical NTFS checkout. The next authorization,
-if desired, should allow pushing `codex/restore-delivery-baseline` and observing
-CircleCI/Vercel preview results without merging or deploying production. Resolve
-absent branch protection and unverified provider settings separately;
-decommission the legacy `/mnt/d/...` checkout only with explicit approval.
+Complete the currently authorized one-shot push of
+`codex/restore-delivery-baseline` and observe available feature-branch remote
+status without merging or deploying production. The feature-branch push will
+not trigger CircleCI because its filters allow only `dev-test` and `main`;
+record that as an external validation/governance gap rather than a passing or
+failing result. Resolve the provider-gate disagreement, absent branch
+protection, and unverified provider settings separately; decommission the
+legacy `/mnt/d/...` checkout only with explicit approval.
