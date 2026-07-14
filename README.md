@@ -27,16 +27,27 @@ The repository is intentionally small:
 - Supabase RLS-first schema design.
 - Vercel-ready Next.js deployment.
 
-## Local development
+## Windows 11 + WSL development
+
+The canonical checkout is stored on the Windows `C:` NTFS volume and operated
+from WSL:
+
+- Windows: `C:\Users\LattePanda\Documents\BSB-Windows`
+- WSL: `/mnt/c/Users/LattePanda/Documents/BSB-Windows`
 
 ```bash
-cd web
-npm install
+cd /mnt/c/Users/LattePanda/Documents/BSB-Windows/web
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
 
 Then open `http://localhost:3000`.
+
+Use WSL Node.js/npm consistently. Do not share `web/node_modules` or
+`web/.next` with Windows Node.js. See
+`docs/architecture/windows-wsl-filesystem.md` for the canonical path map,
+generated paths, and unsupported/pathological locations.
 
 ## Docker development
 
@@ -67,15 +78,12 @@ Optional:
 
 ## Database setup
 
-Run SQL migrations from `web/supabase/migrations/` in ascending order.
+Run SQL migrations from `web/supabase/migrations/` in ascending filename order.
+The current tracked migration set is `0001` through `0020`.
 
-Important current follow-up migrations:
-
-- `0014_add_missing_role_enum_values.sql`
-- `0015_repair_reviewer_role_and_review_threads.sql`
-- `0016_add_private_printed_lesson_logs.sql`
-
-Run `0014` by itself first. Then run `0015`, then `0016`.
+Run enum-extending migrations by themselves before later migrations that depend
+on the new enum values. Never edit an already-applied migration; add a new
+ordered migration.
 
 ## Quality checks
 
@@ -89,5 +97,11 @@ npm run build
 ## Documentation index
 
 - App details: `web/README.md`
+- Windows/WSL filesystem architecture:
+  `docs/architecture/windows-wsl-filesystem.md`
+- Current project monitor: `docs/monitors/bible-study-buddy-project-monitor.md`
+- Branch promotion: `docs/deployment/branch-promotion-policy.md`
+- Verification and broadcasts:
+  `docs/deployment/verification-and-broadcasts.md`
+- Provider inventory: `docs/providers/third-party-provider-inventory.md`
 - Early planning archive: `docs/archive/`
-
