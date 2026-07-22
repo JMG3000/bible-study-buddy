@@ -1,203 +1,181 @@
 # Bible Study Buddy Project Monitor
 
-Timestamp: 2026-07-14
+Timestamp: 2026-07-22 00:05 CDT
 
 ## Executive Status
 
-- Overall: **NTFS target reconstructed; controlled branch based on live
-  `origin/dev-test` and ahead by two existing commits before this reconciliation;
-  local delivery gates pass; provider-gate governance remains unresolved;
-  merge and production promotion are blocked**.
+- Overall: **The NTFS checkout and controlled delivery branch are current; the
+  corrective commit is pushed; local test, lint, typecheck, build, and CircleCI
+  configuration checks pass; dependency audits fail; the feature-branch
+  CircleCI run failed at an undisclosed step; provider-gate governance remains
+  unresolved; merge and production promotion remain blocked.**
 - Canonical Windows checkout:
   `C:\Users\LattePanda\Documents\BSB-Windows`.
 - Canonical WSL checkout:
   `/mnt/c/Users/LattePanda/Documents/BSB-Windows`.
-- Host filesystem: Windows 11 `C:` NTFS volume.
-- WSL filesystem view: DrvFS/9P (`v9fs` reported by Linux filesystem tools).
 - Repository: `JMG3000/bible-study-buddy`.
-- Controlled branch: `codex/restore-delivery-baseline`, based on live
-  `origin/dev-test` at `485e3fb` and ahead by two existing delivery-baseline
-  commits before this reconciliation.
-- Pre-push snapshot before this reconciliation: no
-  `origin/codex/restore-delivery-baseline` remote branch existed and the feature
-  branch had not been pushed.
-- Previous local `dev-test` HEAD: `52057e4` (`feat: add lesson duplication and
-  remix attribution`), two commits behind live `origin/dev-test`.
-- The fetch advanced `origin/dev-test` through `197c1b1` (`actions/checkout` v7)
-  and `485e3fb` (`eslint-config-next` 16.2.10).
-- Live branch snapshot: `origin/dev-test` is `485e3fb`; `origin/main` is
-  `082c731`.
-- Remote URL: `https://github.com/JMG3000/bible-study-buddy.git`.
-- GitHub repository/workflow state, GitHub/CircleCI commit status surfaces, and
-  Vercel commit/deployment status were queried on 2026-07-14. Provider settings
-  were not verified.
+- Controlled branch: `codex/restore-delivery-baseline`.
+- Base: `origin/dev-test` at `485e3fb`.
+- Corrective commit:
+  `bdd0b831c5a3f0b6a09e2e038093d0b7e92a50a0` (`bdd0b83`). It is pushed,
+  and local and remote controlled-branch heads matched at the verified
+  snapshot.
+- Before this monitor-only working-tree update, the controlled branch was
+  0 commits behind and 4 commits ahead of `origin/dev-test`.
+- No merge or production deployment is authorized by this status.
 
 ## Reconstruction Status
 
-- The NTFS target began as an empty Git repository with no commits, files, or
-  remote.
-- It was reconstructed from the clean local recovery checkout at
-  `/mnt/d/repos/codex-projects/bible-study-buddy`.
-- GitHub was restored as `origin`; `dev-test` tracks `origin/dev-test`.
-- The recovery checkout is now a legacy duplicate, not the canonical working
-  directory. Do not edit both copies.
+- The NTFS target began as an empty Git repository and was reconstructed from
+  the recovery checkout at `/mnt/d/repos/codex-projects/bible-study-buddy`.
+- GitHub is configured as `origin`; `dev-test` tracks `origin/dev-test`.
+- The NTFS checkout is canonical. The `/mnt/d/...` recovery checkout is a
+  legacy duplicate; do not edit both copies.
 - Filesystem architecture and path hazards are documented in
   `docs/architecture/windows-wsl-filesystem.md`.
-- `.codex/config.toml` is excluded locally through repository-local Git exclude
-  metadata. Its contents are intentionally not recorded here.
+- `.codex/config.toml` is excluded through repository-local Git metadata. No
+  secret or configuration value is recorded here.
 
-## Local System Inventory
+## Current Local Validation
 
-| System | Local evidence | Status |
+Fresh results for `codex/restore-delivery-baseline` at the 2026-07-22 snapshot:
+
+| Gate | Result | Evidence / qualification |
 | --- | --- | --- |
-| Git checkout | 140 tracked files before this documentation update; branch and remote restored | Verified locally |
-| WSL | Linux `6.18.33.1-microsoft-standard-WSL2`; Ubuntu 24.04.4 LTS | Verified locally |
-| Node.js | `v24.14.1` | Verified locally |
-| npm | `11.11.0` | Verified locally |
-| Next.js tooling | Next.js `^16.2.9`; `eslint-config-next` 16.2.10 after `485e3fb` | Configured in source |
-| Application routes | 21 `page.tsx` files and 5 `route.ts` handlers | Verified locally |
-| Supabase schema | 20 migrations, `0001` through `0020` | Verified locally |
-| Dependencies | Local install updated for the delivery-baseline worktree; Vitest 4.1.10 added as a development dependency | Verified locally; audit reports 0 vulnerabilities |
-| Build output | Next.js 16.2.9/Turbopack production output generated from the delivery-baseline worktree | Verified locally on 2026-07-14 |
-| Docker | `docker-compose.yml` and `web/Dockerfile` present | Configured; not run |
-| GitHub Actions | Two source workflows with manual dispatch only | `Dev Test Gate and Production Promotion` manually disabled; `Security Review` active |
-| CircleCI | `.circleci/config.yml` validates only `dev-test` and `main`; heredoc indentation repaired and YAML parsed locally | At the pre-push snapshot, remote still reported the pre-repair `Unable to parse YAML` state; the feature branch is excluded by branch filters |
-| CodeRabbit | `.coderabbit.yaml` present | Configured; provider settings unverified |
+| `npm test` | Pass | Exit 0 |
+| `npm run lint` | Pass | Exit 0 |
+| `npm run typecheck` | Pass | Exit 0 |
+| `npm run build` | Pass | Exit 0 |
+| `circleci config validate` | Pass | Exit 0 |
+| `circleci config process` | Pass | Exit 0; processed configuration restores executable `<<JSON` |
+| CircleCI success Slack script | Pass | `bash -n` |
+| CircleCI failure Slack script | Pass | `bash -n` |
+| `npm audit --audit-level=moderate` | **Fail** | 21 high-severity vulnerabilities: `brace-expansion` and `js-yaml` through development tooling, plus `sharp` through production Next.js |
+| `npm audit --omit=dev` | **Fail** | 3 high-severity `sharp`/libvips vulnerabilities; npm reports no fix available |
 
-## Application Status
+Additional dependency evidence:
+
+- Dependabot alert 17 is open and high severity for development dependency
+  `brace-expansion` in `web/package-lock.json`.
+- Advisory: `GHSA-3jxr-9vmj-r5cp` / `CVE-2026-13149`.
+- Dependency remediation is a separate change requiring explicit
+  authorization; the audit failures are not waived by the passing functional
+  gates.
+
+## CircleCI Configuration And Remote Run
+
+- `.circleci/config.yml` uses the YAML-safe heredoc form `\<<JSON` in source.
+  Local CircleCI processing restores executable `<<JSON` in the shell script.
+- Local `circleci config validate` and `circleci config process` both exit 0.
+- Extracted success and failure Slack scripts pass `bash -n`.
+- Workflow branch filters are exactly:
+  - `dev-test`
+  - `main`
+  - `codex/restore-delivery-baseline`
+- The corrective feature-branch push triggered CircleCI
+  `validate-and-test`; the workflow reached the validation job but ended in a
+  terminal failure at `2026-07-22T05:03:18Z`.
+- The available GitHub and read-only provider surfaces do not expose the failed
+  CircleCI step. The remote failure cause is therefore **unknown**. In
+  particular, this monitor does not attribute the failure to dependency audit
+  or any other step without authenticated job output.
+
+## GitHub And Vercel Status
+
+- GitHub Actions runs for corrective SHA `bdd0b83`: **0**.
+- Source GitHub Actions workflows remain manual-dispatch oriented; live workflow
+  enablement, required-check policy, and branch protection require owner-level
+  verification and decision.
+- Vercel deployment for `bdd0b83` succeeded at
+  `2026-07-22T05:02:51Z`.
+- Preview URL:
+  `https://bible-study-buddy-jy48vvm3e-jacob-garretts-projects.vercel.app`.
+- A successful preview is not authorization to merge or promote production.
+
+## Application And Integration Inventory
 
 - Next.js App Router application with TypeScript and React 19.
 - Supabase Auth/Postgres integration with RLS-oriented migrations.
 - Public lessons and series; authenticated creation and dashboards.
 - Layout templates, saved lessons, private print logs, reporting, review, and
   administration surfaces.
-- Recent application work adds lesson duplication/remix attribution and migration
-  `0020_add_lesson_remix_parent.sql`.
-- The two live commits beyond the prior local HEAD update `actions/checkout` to
-  v7 and `eslint-config-next` to 16.2.10.
-- Vercel Analytics and optional Meticulous preview recorder are present in
+- Vercel Analytics and optional Meticulous preview recording are present in
   source.
-- Signed, channel-restricted Slack DevOps endpoint can trigger CircleCI
-  validation and configured Vercel deploy hooks.
+- A signed, channel-restricted Slack DevOps endpoint can trigger configured
+  CircleCI validation and Vercel deploy hooks.
+- Docker, CodeRabbit, OAuth providers, OpenAI Moderation, BibleGateway, and the
+  optional scripture-tooltip integration remain source/configuration concerns;
+  this snapshot does not claim their external settings are verified.
 
-## Local Validation - 2026-07-14
+## Provider And Governance Status
 
-Fresh results for the delivery-baseline worktree based on `485e3fb`:
-
-- CircleCI configuration: local PyYAML parse passed after indenting the two
-  heredoc terminators; extracted shell bodies also passed `bash -n` during the
-  focused repair check.
-- `npm test`: passed; 3 Vitest files and 7 tests cover redirect sanitization,
-  Slack signature/replay/requester boundaries, and malformed moderation output.
-- `npm run lint`: passed.
-- `npm run typecheck`: passed.
-- `npm run build`: passed with Next.js 16.2.9/Turbopack; 29 route entries plus
-  the proxy were emitted.
-- `npm audit --audit-level=moderate`: passed; 0 vulnerabilities.
-- `git diff --check`: passed.
-- Runtime: Node.js 24.14.1 and npm 11.11.0.
-- WSL/NTFS test-runner note: the runner uses Linux `/tmp` when inherited temp
-  configuration points at an unavailable or Windows-mounted path.
-
-Historical 2026-07-13 results at `52057e4` are superseded for local delivery
-readiness. They remain available in Git history.
-
-## Branch And Delivery Status
-
-- `dev-test` remains the development/testing branch; live `origin/dev-test` is
-  `485e3fb`.
-- `main` remains the intended Vercel production branch; live `origin/main` is
-  `082c731`.
-- The controlled local branch `codex/restore-delivery-baseline` was created from
-  live `origin/dev-test` at `485e3fb`. At the pre-push snapshot, its two existing
-  delivery-baseline commits and this reconciliation remained local.
-- Automatic GitHub Actions `push`, `pull_request`, and scheduled triggers remain
-  commented out in both tracked workflows.
-- The validation job now runs `npm test` after `npm ci` and before lint,
-  typecheck, and build. Automatic triggers remain disabled, source remains
-  manual-dispatch only, and the live gate workflow remains manually disabled.
-- Both workflows retain `workflow_dispatch` in source. In live GitHub state,
-  `Dev Test Gate and Production Promotion` is manually disabled; `Security
-  Review` is active but its source triggers are manual-dispatch only.
-- The documented Actions pause expired on 2026-07-01. Because source still has
-  automatic triggers disabled, repository-owner verification and a deliberate
-  re-enable/extend decision are required.
-- Neither `main` at `082c731` nor `dev-test` at `485e3fb` has GitHub branch
-  protection.
-- CircleCI still reports the pre-repair `Unable to parse YAML` remote state.
-  Locally, the invalid heredoc terminators at `.circleci/config.yml:61` and
-  `.circleci/config.yml:81` were indented into their YAML block scalars; local
-  YAML parsing and shell syntax checks pass. At the pre-push snapshot, no remote
-  rerun had occurred.
-- `.circleci/config.yml` branch filters allow only `dev-test` and `main`.
-  Pushing `codex/restore-delivery-baseline` will not trigger CircleCI, so the
-  feature-branch remote observation cannot prove CircleCI execution or its
-  `npm test` step. This remains an external validation and governance gap; the
-  filters are unchanged because changing them is outside this reconciliation.
-- GitHub/CircleCI commit status and Vercel commit status were queried. The
-  Vercel deployment associated with live `dev-test` reported success.
-- The older broad provider policy and newer local-plus-Vercel-plus-Meticulous
-  classification disagree about mandatory gates. This remains an unresolved
-  governance decision; merge and production promotion are blocked until
-  maintainers choose a policy and its gates pass or are explicitly waived.
-
-## Provider And Integration Status
-
-| Provider/system | Source state | Live state on 2026-07-14 |
+| Provider/system | Current evidence | Remaining gap |
 | --- | --- | --- |
-| Supabase | Clients, environment contract, migrations, RLS, and webhook route configured | Settings and deployed state unverified |
-| Vercel | Deployment model, analytics, env contract, and deploy hooks configured | Live `dev-test` deployment reported success; production configuration/settings unverified |
-| Meticulous | Preview recorder integration configured; production recording disabled by policy | Settings and session state unverified |
-| CircleCI | Validation pipeline and Slack broadcast path configured; YAML repaired and parsed locally; branch filters allow only `dev-test` and `main` | At the pre-push snapshot, queried remote state remained `Unable to parse YAML`; feature-branch pushes are filtered out |
-| CodeRabbit | Review policy configured | Settings and review state unverified |
-| Slack | Signed command endpoint and project channel ID configured | Settings and channel/integration state unverified |
-| GitHub Actions | Source workflows are manual-dispatch only | Gate workflow manually disabled; Security Review active; other settings unverified |
-| Google/GitHub OAuth | Supported through Supabase Auth | Provider settings unverified |
-| OpenAI Moderation | Optional server-side integration | Not configured locally |
-| BibleGateway | Public outbound scripture links configured | Endpoint not queried |
-| Scripture tooltip script | Optional and disabled by default | Not queried |
-| Sentry | No source integration | Not configured |
+| CircleCI | Feature-branch run triggered, reached validation, and failed terminally | Authenticated failed-step output is required |
+| Vercel | `bdd0b83` preview deployment succeeded | Production settings and promotion remain unverified/unauthorized |
+| GitHub Actions | 0 runs for `bdd0b83` | Workflow enablement and required-check policy unresolved |
+| GitHub branch protection | No current protection/settings verification in this snapshot | Verify and deliberately configure `dev-test` and `main` |
+| Supabase | Clients, migrations, RLS, and webhook route exist in source | Deployed schema, environment, auth, and webhook settings unverified |
+| Slack | Signed command endpoint and channel restriction exist in source | Workspace/channel integration state unverified |
+| Meticulous | Preview recorder integration exists in source | Provider settings and session state unverified |
+| CodeRabbit | Review policy exists in source | Provider settings and review state unverified |
+
+- The mandatory-provider gate policy remains unresolved. Older broad-provider
+  requirements and the newer local-plus-selected-provider classification have
+  not been reconciled.
+- Do not merge to `dev-test`, merge to `main`, or promote production until the
+  policy is decided and every mandatory gate passes or is explicitly waived by
+  an authorized maintainer.
 
 ## Filesystem And Path Risks
 
-1. Duplicate active checkout at `/mnt/d/repos/codex-projects/bible-study-buddy`.
-2. Windows Node.js and WSL Node.js sharing `web/node_modules` or `web/.next`.
-3. Windows path syntax used in Bash or `/mnt/c` syntax used in incompatible
-   Windows tools.
-4. Case-only filenames, Linux permission assumptions, or symlink assumptions on
-   NTFS through DrvFS.
-5. Treating `.env.local`, `.next`, `node_modules`, `.vercel`, or local logs as
-   portable/source-controlled state.
+1. Duplicate checkout at `/mnt/d/repos/codex-projects/bible-study-buddy` can
+   diverge from the canonical NTFS checkout.
+2. Windows Node.js and WSL Node.js must not share mutable `web/node_modules` or
+   `web/.next` state across incompatible execution contexts.
+3. Windows path syntax in Bash, or `/mnt/c` syntax in incompatible Windows
+   tools, can target the wrong path or fail.
+4. Case-only filenames, Linux permission assumptions, and symlink assumptions
+   are unsafe on NTFS through DrvFS/9P.
+5. `.env.local`, `.next`, `node_modules`, `.vercel`, and local logs are
+   machine-local state, not portable source-controlled state.
+6. Decommissioning the legacy `/mnt/d/...` checkout requires explicit deletion
+   approval after the NTFS checkout is accepted as authoritative.
 
-## Current Blockers And Decisions
+## Historical And Superseded Facts
 
-1. Complete the currently authorized one-shot push of
-   `codex/restore-delivery-baseline` and observe available feature-branch remote
-   status without merging or promoting production.
-2. Treat the expected absence of a CircleCI run as inconclusive: feature-branch
-   pushes are filtered out, so proving the repaired configuration and `npm test`
-   requires the repaired commit to reach `dev-test` or `main`, or an explicitly
-   authorized and configured manual path that changes or bypasses the filters.
-   Rerunning an earlier eligible-branch commit cannot validate the repair.
-3. Decide whether to enable `Dev Test Gate and Production Promotion`, and add
-   deliberate protection for `main` and `dev-test` before relying on branch
-   gates.
-4. Resolve the mandatory-provider policy disagreement between the older broad
-   gate list and newer local-plus-Vercel-plus-Meticulous classification; do not
-   merge or promote to production before that decision.
-5. Verify production Vercel configuration plus Supabase, Slack, Meticulous,
-   OAuth, CodeRabbit, and remaining provider settings before production
-   promotion.
-6. Decommission the legacy `/mnt/d/...` checkout only after NTFS validation and
-   explicit deletion approval.
+- The 2026-07-14 pre-push snapshot is historical. Its statements that no remote
+  controlled branch existed, the corrective work remained local, and a
+  feature-branch push would not trigger CircleCI are superseded.
+- The prior CircleCI filters limited to `dev-test` and `main` are superseded;
+  the controlled feature branch is now included exactly as listed above.
+- The prior local audit result of 0 vulnerabilities is superseded by the fresh
+  failing audits and open Dependabot alert documented above.
+- The prior remote CircleCI `Unable to parse YAML` observation is superseded by
+  the current triggered run, successful local validation/processing, and
+  undisclosed remote step failure.
+- Historical July 13/14 validation and pre-reconciliation branch counts remain
+  useful only as Git-history context, not current release-readiness evidence.
 
-## Next Recommended Action
+## Current Blockers
 
-Complete the currently authorized one-shot push of
-`codex/restore-delivery-baseline` and observe available feature-branch remote
-status without merging or deploying production. The feature-branch push will
-not trigger CircleCI because its filters allow only `dev-test` and `main`;
-record that as an external validation/governance gap rather than a passing or
-failing result. Resolve the provider-gate disagreement, absent branch
-protection, and unverified provider settings separately; decommission the
-legacy `/mnt/d/...` checkout only with explicit approval.
+1. CircleCI failed remotely, and the failed step is unavailable through the
+   current read-only surfaces.
+2. Dependency audits report high-severity advisories, including production
+   `sharp`/libvips advisories with no npm-provided fix.
+3. Mandatory provider-gate policy, workflow enablement, branch protections, and
+   provider settings are unresolved.
+4. Production promotion has not been authorized.
+
+## Next Recommended Actions
+
+1. Inspect the failed CircleCI job with authenticated CircleCI access and
+   capture the exact failed step and log evidence.
+2. Obtain separate authorization for dependency remediation; assess the
+   `sharp`/Next production path independently from development-tooling
+   advisories.
+3. After any corrective change, rerun all mandatory local and provider gates,
+   including both audit scopes and the CircleCI remote workflow.
+4. Resolve the mandatory-provider policy and deliberately configure workflow
+   enablement, required checks, branch protections, and production-provider
+   settings before merge or production promotion.
