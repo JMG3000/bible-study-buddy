@@ -57,7 +57,7 @@ jobs:
               exit 0
             fi
 
-            payload=$(cat <<JSON
+            payload=$(cat \<<JSON
             {
               "text": "Bible Study Buddy CircleCI validation passed for ${CIRCLE_BRANCH:-unknown} at ${CIRCLE_SHA1:-unknown}. Build: ${CIRCLE_BUILD_URL:-unavailable}"
             }
@@ -77,7 +77,7 @@ jobs:
               exit 0
             fi
 
-            payload=$(cat <<JSON
+            payload=$(cat \<<JSON
             {
               "text": "Bible Study Buddy CircleCI validation failed for ${CIRCLE_BRANCH:-unknown} at ${CIRCLE_SHA1:-unknown}. Build: ${CIRCLE_BUILD_URL:-unavailable}"
             }
@@ -98,3 +98,4 @@ workflows:
               only:
                 - dev-test
                 - main
+                - codex/restore-delivery-baseline
