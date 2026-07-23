@@ -54,12 +54,10 @@ jobs:
               exit 0
             fi
 
-            payload=$(cat <<JSON
-            {
-              "text": "Bible Study Buddy CircleCI validation passed for ${CIRCLE_BRANCH:-unknown} at ${CIRCLE_SHA1:-unknown}. Build: ${CIRCLE_BUILD_URL:-unavailable}"
-            }
-JSON
-            )
+            payload=$(printf '{"text": "Bible Study Buddy CircleCI validation passed for %s at %s. Build: %s"}' \
+              "${CIRCLE_BRANCH:-unknown}" \
+              "${CIRCLE_SHA1:-unknown}" \
+              "${CIRCLE_BUILD_URL:-unavailable}")
 
             curl -sS -X POST \
               -H "Content-Type: application/json" \
@@ -74,12 +72,10 @@ JSON
               exit 0
             fi
 
-            payload=$(cat <<JSON
-            {
-              "text": "Bible Study Buddy CircleCI validation failed for ${CIRCLE_BRANCH:-unknown} at ${CIRCLE_SHA1:-unknown}. Build: ${CIRCLE_BUILD_URL:-unavailable}"
-            }
-JSON
-            )
+            payload=$(printf '{"text": "Bible Study Buddy CircleCI validation failed for %s at %s. Build: %s"}' \
+              "${CIRCLE_BRANCH:-unknown}" \
+              "${CIRCLE_SHA1:-unknown}" \
+              "${CIRCLE_BUILD_URL:-unavailable}")
 
             curl -sS -X POST \
               -H "Content-Type: application/json" \
