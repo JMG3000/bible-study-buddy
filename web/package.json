@@ -26,15 +26,12 @@
     "typescript": "^5"
   },
   "overrides": {
-    "minimatch@3.1.5": {
-      "brace-expansion": "1.1.15"
-    },
-    "minimatch@10.2.5": {
-      "brace-expansion": "5.0.6"
-    },
+    "brace-expansion@<1.1.16": "1.1.16",
+    "brace-expansion@>=3.0.0 <5.0.7": "5.0.7",
     "@babel/core": "7.29.7",
-    "js-yaml": "4.2.0",
+    "js-yaml": "4.3.0",
     "postcss": "8.5.10",
+    "sharp": "0.35.3",
     "ws": "8.21.0"
   }
 }
