@@ -34,6 +34,9 @@ jobs:
       - install_web_dependencies
       - save_web_cache
       - run:
+          name: Test
+          command: cd web && npm test
+      - run:
           name: Lint
           command: cd web && npm run lint
       - run:
