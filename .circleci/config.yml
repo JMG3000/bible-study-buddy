@@ -94,3 +94,4 @@ workflows:
               only:
                 - dev-test
                 - main
+                - /^dependabot\/.*/
