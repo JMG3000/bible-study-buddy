@@ -13,7 +13,7 @@ This directory contains the Next.js application for Bible Study Buddy: Free.
 ## Run locally
 
 ```bash
-cd /mnt/c/Users/LattePanda/Documents/BSB-Windows/web
+cd /mnt/c/Users/<your-username>/Documents/<repo-root>/web
 npm ci
 cp .env.example .env.local
 npm run dev

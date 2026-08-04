@@ -32,11 +32,11 @@ The repository is intentionally small:
 The canonical checkout is stored on the Windows `C:` NTFS volume and operated
 from WSL:
 
-- Windows: `C:\Users\LattePanda\Documents\BSB-Windows`
-- WSL: `/mnt/c/Users/LattePanda/Documents/BSB-Windows`
+- Windows: `C:\Users\<your-username>\Documents\<repo-root>`
+- WSL: `/mnt/c/Users/<your-username>/Documents/<repo-root>`
 
 ```bash
-cd /mnt/c/Users/LattePanda/Documents/BSB-Windows/web
+cd /mnt/c/Users/<your-username>/Documents/<repo-root>/web
 npm ci
 cp .env.example .env.local
 npm run dev
