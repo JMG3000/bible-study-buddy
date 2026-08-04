@@ -66,7 +66,7 @@ function toDuplicateError(error: { code?: string; message?: string } | null) {
   }
 
   return new DuplicateLessonError(
-    error?.message ?? "We could not duplicate that lesson yet.",
+    "We could not duplicate that lesson yet.",
     500,
   );
 }
