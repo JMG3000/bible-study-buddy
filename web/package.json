@@ -23,7 +23,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.2.12",
+    "eslint-config-next": "16.3.3",
     "typescript": "^5",
     "vitest": "^4.1.10"
   },
@@ -35,9 +35,10 @@
       "brace-expansion": "5.0.9"
     },
     "@babel/core": "7.29.7",
-    "js-yaml": "4.3.0",
+    "js-yaml": "4.3.2",
     "postcss": "8.5.25",
     "sharp": "0.35.3",
-    "ws": "8.21.0"
+    "ws": "8.21.0",
+    "nanoid": "3.3.18"
   }
 }
