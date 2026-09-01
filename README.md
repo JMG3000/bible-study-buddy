@@ -7,6 +7,17 @@ Dev-Test:
 
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/JMG3000/bible-study-buddy?utm_source=oss&utm_medium=github&utm_campaign=JMG3000%2Fbible-study-buddy&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
+
+
+ _______________________________
+< BOFH: Bunny of Friendly Help. >
+ -------------------------------
+  \
+   \   \
+        \ /\
+        ( )
+      .( o ).
+
 Bible Study Buddy: Free is a Next.js app for creating, publishing, browsing,
 saving, reporting, printing, and organizing Bible study lesson plans.
 
