@@ -100,8 +100,13 @@ export async function reviewLessonContent(
     const payload = (await response.json()) as {
       results?: Array<{ flagged?: boolean }>;
     };
+    const flagged = payload.results?.[0]?.flagged;
 
-    if (payload.results?.[0]?.flagged) {
+    if (typeof flagged !== "boolean") {
+      return runHeuristicReview(text);
+    }
+
+    if (flagged) {
       return {
         approved: false,
         provider: "openai",

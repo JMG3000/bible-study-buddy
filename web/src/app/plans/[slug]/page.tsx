@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
+  duplicateLessonAction,
   submitLessonReportAction,
   toggleFavoriteAction,
 } from "./actions";
@@ -15,6 +16,7 @@ import {
   buildCanonicalUrl,
   formatDate,
   getCurrentViewer,
+  getPublishedLessonAttributionById,
   getViewerLessonReportAccess,
   isLessonPlanSavedForViewer,
   getLessonPlanBySlug,
@@ -87,9 +89,13 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
     isLessonPlanSavedForViewer(plan.id, viewer?.userId),
     getViewerLessonReportAccess(plan.id, viewer?.userId),
   ]);
-  const layoutTemplate = await getLessonPlanLayoutTemplate(plan.layoutTemplateId);
+  const [layoutTemplate, parentLesson] = await Promise.all([
+    getLessonPlanLayoutTemplate(plan.layoutTemplateId),
+    getPublishedLessonAttributionById(plan.parentLessonId),
+  ]);
   const reportMessage = readValue(resolvedSearchParams, "report");
   const reportError = readValue(resolvedSearchParams, "reportError");
+  const duplicateError = readValue(resolvedSearchParams, "duplicateError");
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -127,6 +133,14 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
           {plan.authorHandle ? (
             <Link href={`/plans?q=%40${plan.authorHandle}`} className="detail-author inline-link no-print">
               Made by @{plan.authorHandle}
+            </Link>
+          ) : null}
+          {parentLesson ? (
+            <Link
+              href={`/plans/${parentLesson.slug}`}
+              className="detail-author inline-link no-print"
+            >
+              Remixed from {parentLesson.title}
             </Link>
           ) : null}
         </div>
@@ -266,6 +280,18 @@ export default async function LessonPlanDetailPage({ params, searchParams }: Pag
                 layoutTemplate={layoutTemplate}
                 canSavePrintLog={Boolean(viewer)}
               />
+              <form action={duplicateLessonAction} className="stack-sm">
+                <input type="hidden" name="lessonPlanId" value={plan.id} />
+                <input type="hidden" name="returnPath" value={`/plans/${slug}`} />
+                <button type="submit" className="button-secondary auth-button">
+                  {viewer ? "Duplicate as draft" : "Sign in to duplicate"}
+                </button>
+              </form>
+              {duplicateError ? (
+                <div className="helper-banner" role="alert">
+                  {duplicateError}
+                </div>
+              ) : null}
             </div>
 
             <div className="stack-sm no-print">

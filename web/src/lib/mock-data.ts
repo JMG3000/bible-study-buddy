@@ -38,6 +38,7 @@ export const lessonPlans: LessonPlan[] = [
   {
     id: "plan-acts-2-table",
     slug: "acts-2-at-the-table",
+    parentLessonId: null,
     authorId: "user-rachel",
     authorName: "Rachel Monroe",
     authorHandle: "rachel-monroe",
@@ -87,6 +88,7 @@ export const lessonPlans: LessonPlan[] = [
   {
     id: "plan-psalm-23-rest",
     slug: "psalm-23-for-anxious-hearts",
+    parentLessonId: null,
     authorId: "user-adrian",
     authorName: "Adrian Lewis",
     authorHandle: "adrian-lewis",
@@ -134,6 +136,7 @@ export const lessonPlans: LessonPlan[] = [
   {
     id: "plan-matthew-5-mercy",
     slug: "mercy-in-the-sermon-on-the-mount",
+    parentLessonId: null,
     authorId: "user-hannah",
     authorName: "Hannah Porter",
     authorHandle: "hannah-porter",
@@ -182,6 +185,7 @@ export const lessonPlans: LessonPlan[] = [
   {
     id: "plan-james-2-active-faith",
     slug: null,
+    parentLessonId: null,
     authorId: "user-rachel",
     authorName: "Rachel Monroe",
     authorHandle: "rachel-monroe",
@@ -223,6 +227,7 @@ export const lessonPlans: LessonPlan[] = [
   {
     id: "plan-john-13-serving-love",
     slug: "serving-love-in-john-13",
+    parentLessonId: null,
     authorId: "user-adrian",
     authorName: "Adrian Lewis",
     authorHandle: "adrian-lewis",

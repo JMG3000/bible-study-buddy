@@ -48,6 +48,7 @@ export interface StudySeriesMembership {
 export interface LessonPlan {
   id: string;
   slug: string | null;
+  parentLessonId: string | null;
   authorId: string;
   authorName: string;
   authorHandle: string | null;
@@ -231,6 +232,12 @@ export interface LessonReportAccess {
   ctaLabel: string;
   helperMessage: string | null;
   cooldownUntil: string | null;
+}
+
+export interface LessonAttribution {
+  id: string;
+  slug: string;
+  title: string;
 }
 
 export interface LessonPlanFilters {

@@ -107,21 +107,70 @@ img {
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 1rem;
   padding: 1rem 0;
 }
 
-.header-controls {
-  display: flex;
-  align-items: center;
+.site-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.site-menu-button {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-content: center;
+  gap: 0.3rem;
+  border: 1px solid rgba(249, 251, 255, 0.26);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  list-style: none;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.site-menu-button::-webkit-details-marker {
+  display: none;
+}
+
+.site-menu-button:hover,
+.site-menu[open] .site-menu-button {
+  transform: translateY(-1px);
+  border-color: rgba(249, 251, 255, 0.45);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.site-menu-button span {
+  width: 1.25rem;
+  height: 2px;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.site-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  left: 0;
+  width: min(17rem, calc(100vw - 2rem));
+  display: grid;
   gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(60, 86, 137, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: var(--shadow);
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 0.8rem;
+  min-width: 0;
 }
 
 .brand-mark {
@@ -177,6 +226,7 @@ img {
 
 .site-actions form {
   display: inline-flex;
+  width: 100%;
 }
 
 .hero-actions {
@@ -188,7 +238,18 @@ img {
 }
 
 .site-nav {
+  flex-direction: column;
   gap: 0.5rem;
+}
+
+.site-actions {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.site-nav-link,
+.site-actions .header-utility-button {
+  width: 100%;
 }
 
 .site-nav a,
@@ -811,7 +872,6 @@ img {
 }
 
 @media (max-width: 760px) {
-  .site-header-inner,
   .site-footer-inner,
   .section-head,
   .plan-card-footer {
@@ -819,14 +879,17 @@ img {
     flex-direction: column;
   }
 
-  .header-controls {
-    width: 100%;
-    align-items: stretch;
-    flex-direction: column;
-  }
-
   .site-nav {
     gap: 0.5rem 1rem;
+  }
+
+  .brand-copy {
+    min-width: 0;
+  }
+
+  .brand-copy strong,
+  .brand-copy span {
+    overflow-wrap: anywhere;
   }
 
   .series-lesson-row {

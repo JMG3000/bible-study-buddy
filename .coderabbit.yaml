@@ -4,7 +4,7 @@ early_access: false
 reviews:
   profile: assertive
   path_instructions:
-    - path: "src/**/*.ts"
+    - path: "web/src/**/*.ts"
       instructions: "Focus on architecture and system design."
   request_changes_workflow: false
   high_level_summary: true

@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "@/lib/env";
+import {
+  DuplicateLessonError,
+  duplicateLessonToDraft,
+} from "@/lib/duplicate-lessons";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ReportReason } from "@/lib/types";
 import {
@@ -78,6 +82,68 @@ export async function toggleFavoriteAction(formData: FormData) {
   revalidatePath("/dashboard/saved");
   revalidatePath(redirectPath);
   redirect(redirectPath);
+}
+
+export async function duplicateLessonAction(formData: FormData) {
+  const lessonPlanId = formData.get("lessonPlanId");
+  const redirectPath = sanitizeNextPath(formData.get("returnPath"), "/plans");
+  const cookieStore = await cookies();
+  const viewer = await getCurrentViewer();
+
+  if (typeof lessonPlanId !== "string" || lessonPlanId.length === 0) {
+    redirect(redirectPath);
+  }
+
+  if (!viewer) {
+    cookieStore.set(
+      POST_AUTH_REDIRECT_COOKIE,
+      redirectPath,
+      getRedirectCookieOptions(),
+    );
+    redirect("/login");
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  if (!supabase) {
+    redirect(
+      buildReportRedirect(
+        redirectPath,
+        "duplicateError",
+        "Lesson duplication is not available right now.",
+      ),
+    );
+  }
+
+  let draftId: string;
+
+  try {
+    const draft = await duplicateLessonToDraft({
+      supabase,
+      sourceLessonId: lessonPlanId,
+      userId: viewer.userId,
+    });
+    draftId = draft.id;
+  } catch (error) {
+    redirect(
+      buildReportRedirect(
+        redirectPath,
+        "duplicateError",
+        error instanceof DuplicateLessonError
+          ? error.message
+          : "We could not duplicate that lesson yet.",
+      ),
+    );
+  }
+
+  revalidatePath("/dashboard");
+  redirect(
+    buildReportRedirect(
+      `/dashboard/plans/${draftId}`,
+      "saved",
+      "Duplicated as a new draft.",
+    ),
+  );
 }
 
 const validReportReasons: ReportReason[] = [
