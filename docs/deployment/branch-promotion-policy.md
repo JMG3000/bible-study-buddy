@@ -2,72 +2,119 @@
 
 Date adopted: 2026-06-05
 
-Current delivery-state review: 2026-07-14.
+Hybrid gate contract ratified by the repository owner: 2026-09-02
 
-Use `docs/monitors/bible-study-buddy-project-monitor.md` as the authority for
-volatile branch, workflow, deployment, and provider-status observations.
+Use `docs/monitors/bible-study-buddy-project-monitor.md` for volatile branch,
+workflow, deployment, and provider observations. This document governs policy.
 
 ## Branches
 
-- `dev-test` is the development and testing branch.
-- `main` is the production branch and should remain the branch Vercel uses for production deployments.
-- Live refs reviewed on 2026-07-14: `dev-test` at `485e3fb`; `main` at
-  `082c731`. The controlled local branch `codex/restore-delivery-baseline` is
-  based on live `origin/dev-test` at `485e3fb` and is ahead.
+- `dev-test` is the development and integration branch.
+- `main` is the production branch and remains Vercel's production branch.
+- Production promotion occurs through a deliberate pull request from `dev-test` to `main`.
+- No workflow may push directly to `main` as a substitute for the pull request.
+
+## Governing Gate Contract
+
+Every production proposal must satisfy the universal gates:
+
+1. Fresh local validation at the proposed commit.
+2. The canonical CircleCI validation workflow.
+
+Additional gates apply only when the changed surface makes them relevant:
+
+- Vercel preview is required for UI, routing, runtime, deployment, or
+  environment-sensitive changes.
+- Supabase validation is required for migrations, schema, generated types,
+  Auth, RLS, Storage, database functions, or Edge Functions.
+- CodeQL is required for supported source-code changes once the emitted check
+  is active and stable.
+- GitHub dependency review is required for manifest or lockfile changes once
+  that workflow is installed and producing a stable check.
+
+Dependabot alerts, security updates, and version-update pull requests are
+maintenance automation. They are not themselves a per-pull-request gate.
+
+CodeRabbit and Meticulous are advisory only. Their presence, absence, failure,
+plan limitation, or provider availability must not determine merge eligibility.
+
+Slack is notification and command transport only. A Slack message is not an
+approval, waiver, validation result, or authoritative evidence record.
+
+## Single-Attempt, Fail-Fast Execution
+
+Validation is sequential and fail-fast:
+
+`install -> test -> lint -> typecheck -> build -> dependency audit`
+
+- Each automatic provider workflow runs at most once for a commit and trigger.
+- Each validation stage runs once.
+- A passing stage unlocks the next stage.
+- A failed stage ends that validation sequence.
+- Later validation stages do not run after the first failure.
+- Failure notification or cleanup may run, but it must not execute another test
+  or convert the failure into success.
+- Automatic retries, retry loops, blanket reruns, and continuous retesting are
+  prohibited.
+- A new attempt requires a new commit or an explicit maintainer-initiated
+  manual run. Provider-generated duplicate runs must not be treated as
+  additional evidence.
+
+CircleCI currently implements this behavior as one sequential job. GitHub
+Actions workflows must preserve the same semantics when enabled.
+
+## Local Validation
+
+From the repository root, use the repository-defined commands:
+
+```bash
+npm --prefix web ci
+npm --prefix web test
+npm --prefix web run lint
+npm --prefix web run typecheck
+npm --prefix web run build
+npm --prefix web audit --audit-level=moderate
+```
+
+Record the commit SHA and command result summary in the pull request. CircleCI
+must independently repeat the canonical validation in a clean environment.
 
 ## Promotion Flow
 
-1. Development work is pushed to `dev-test`.
-2. Vercel creates a preview deployment from `dev-test`.
-3. Meticulous connects through the Vercel preview by using the App Router recorder script and the Vercel preview URL.
-4. Fresh local validation at the promotion SHA remains required. From the
-   repository root, run `npm --prefix web test`, `npm --prefix web run lint`,
-   `npm --prefix web run typecheck`, `npm --prefix web run build`, and
-   `npm --prefix web audit --audit-level=moderate`; use `npm --prefix web ci`
-   when a clean install is required. The delivery-baseline worktree passed this
-   local gate set on 2026-07-14.
-5. Resolve the provider-gate governance disagreement documented below.
-6. Only after the agreed gates pass or are explicitly waived, merge and promote
-   `main` deliberately.
-7. Vercel production should deploy from `main`.
+1. Push development work to `dev-test`.
+2. Run local validation at the proposed commit.
+3. Allow CircleCI to execute once, sequentially and fail-fast.
+4. Collect the applicable Vercel, Supabase, CodeQL, and dependency-review
+   evidence.
+5. Review the exact commit-specific evidence on the pull request.
+6. Merge through the protected `main` pull-request path only when the governing
+   gates pass.
+7. Allow Vercel production to deploy from `main`.
 
-## Safety Rules
+## Branch Protection
 
-- The promotion job uses `--ff-only`, so it will fail instead of creating a surprise merge commit if `main` has diverged.
-- Keep `main` protected in GitHub branch protection. The 2026-07-14 live query
-  found no branch protection for either `main` at `082c731` or `dev-test` at
-  `485e3fb`; this is an unresolved policy gap.
-- If branch protection blocks the default GitHub Actions token from pushing, use that failure as a signal to configure a deliberate production promotion token or require manual approval.
-- Dependabot update pull requests target `dev-test`, not `main`.
-- Automatic GitHub Actions triggers remain disabled in source. Both workflows
-  retain `workflow_dispatch`, but live GitHub state shows `Dev Test Gate and
-  Production Promotion` manually disabled; `Security Review` is active and
-  source-limited to manual dispatch.
-- CircleCI cannot supply supporting validation while its remote status is
-  `Unable to parse YAML`. The heredoc terminators at `.circleci/config.yml:61`
-  and `.circleci/config.yml:81` are repaired locally and local YAML/shell checks
-  pass; provider execution remains unverified until the repaired commit reaches
-  a CircleCI-eligible branch (`dev-test` or `main`), or maintainers explicitly
-  authorize and configure a manual path that changes or bypasses the filters.
-- Provider-gate policy remains unresolved. The older broad policy requires or
-  explicitly waives local validation, CircleCI, CodeRabbit, Vercel, Supabase,
-  and Meticulous; the newer classification treats local validation plus Vercel
-  preview and Meticulous review as mandatory, with the other providers as
-  supporting evidence. This document does not select either policy.
-- Merge and production promotion remain blocked until maintainers decide the
-  governing provider-gate policy and the resulting gates pass or are explicitly
-  waived.
-- CodeQL is disabled for this repository and is not an active promotion gate.
+- Require only active, stable checks that are emitted for the protected path.
+- Select the expected GitHub App as the source when GitHub supports source
+  binding for the check.
+- A conditional check must return a terminal `success`, `neutral`, or `skipped`
+  result when it is not applicable; it must not remain pending.
+- Do not require CodeRabbit or Meticulous.
+- Do not make Slack, Jira, or a supervisor/aggregator service an approval gate.
+- Preserve non-fast-forward and branch-deletion protection.
+- Validate new required checks on `dev-test` before enforcing them on `main`.
 
-## Required GitHub Settings
+## Security And Provider Boundaries
 
-- Decide whether to enable `Dev Test Gate and Production Promotion`; source
-  `workflow_dispatch` alone does not override its live disabled state.
-- Add deliberate protection for `main` and `dev-test`, requiring only checks
-  that are active and passing.
-- Enable Dependabot alerts and Dependabot security updates in repository security settings.
-- Do not require CodeQL/code scanning until the repository has code scanning enabled again.
-- Confirm Vercel production branch is set to `main`; `dev-test` should remain a
-  preview/development branch. The live `dev-test` deployment at `485e3fb`
-  reported success, but production configuration/settings remain unverified.
-- Confirm Meticulous has access to Vercel preview URLs and that `NEXT_PUBLIC_METICULOUS_PROJECT_ID` is configured for Vercel preview environments.
+- Store provider credentials in the provider's secret store, never in source.
+- Keep CircleCI contexts and GitHub permissions least-privileged.
+- Supabase production changes must use version-controlled migrations and
+  CI-controlled credentials; do not make ad hoc production schema changes.
+- Vercel preview evidence must correspond to the exact pull-request commit.
+- Jira records decisions and evidence links but is not the technical source of
+  truth and does not authorize a merge.
+
+## Current Promotion Boundary
+
+Ratifying this policy does not authorize merging PR #36 or deploying
+production. Branch-protection changes must follow live workflow inspection and
+successful observation of the exact check names to be required.

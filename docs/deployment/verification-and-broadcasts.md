@@ -1,120 +1,133 @@
 # Verification And Broadcasts
 
-Last source and limited live-status review: 2026-07-14.
+Policy ratified: 2026-09-02
 
-Live queries were limited to GitHub repository/workflow state,
-GitHub/CircleCI commit status surfaces, and Vercel commit/deployment status.
-`Configured in source` does not prove provider settings are connected, healthy,
-or authorized.
+Use `docs/monitors/bible-study-buddy-project-monitor.md` for volatile provider
+status. This document defines the stable verification roles and evidence flow.
 
-For volatile branch, workflow, deployment, and provider status, use
-`docs/monitors/bible-study-buddy-project-monitor.md` as the authority.
+## Governing Verification Matrix
 
-## Promotion Gates And Supporting Systems
-
-The repository contains two provider-gate policies that have not been
-reconciled. The older broad policy requires or explicitly waives local
-validation, CircleCI, CodeRabbit, Vercel, Supabase, and Meticulous. The newer
-2026-07-14 classification below treats local validation, Vercel preview, and
-Meticulous review as mandatory, with the remaining providers as supporting
-evidence or transport. This document preserves that newer classification as
-historical context; it does not make it the governing policy. Merge and
-production promotion remain blocked until maintainers decide which policy
-governs and the resulting gates pass or are explicitly waived.
-
-| Service | Newer 2026-07-14 classification (not ratified) | Role | Current status |
+| System | Classification | Applicability | Authoritative evidence |
 | --- | --- | --- | --- |
-| Local WSL validation | Mandatory promotion gate | From the repository root, run `npm --prefix web test`, `npm --prefix web run lint`, `npm --prefix web run typecheck`, `npm --prefix web run build`, and `npm --prefix web audit --audit-level=moderate`. Use `npm --prefix web ci` for a clean install when required. | Passed 2026-07-14 on the delivery-baseline worktree based on `485e3fb`: 7 tests, lint, typecheck, build, audit, YAML parse, and diff check |
-| Vercel preview | Mandatory promotion gate | Preview deployment verification, preview URL, build status, and runtime signal review. | Live `dev-test` deployment at `485e3fb` reported success; production configuration/settings unverified |
-| Meticulous | Mandatory promotion gate | Visual/session review through the Vercel preview and App Router recorder. | Preview recorder configured; settings and session state unverified |
-| GitHub Actions | Supporting automation | Manual validation, promotion, and secret-pattern scan workflows. | `Dev Test Gate and Production Promotion` manually disabled; `Security Review` active but source is manual-dispatch only; not an available mandatory gate |
-| CircleCI | Supporting automation | Optional duplicate build verification for `dev-test` and `main`. | At the 2026-07-14 pre-push snapshot, heredoc terminators were repaired and YAML parsed locally while remote status still reported the pre-repair `Unable to parse YAML`; the feature branch is not allowed by the `dev-test`/`main` branch filters |
-| CodeRabbit | Supporting evidence | Code review on PRs and configured review policy through `.coderabbit.yaml`. | Configured in source; settings and review state unverified |
-| Supabase | Supporting release evidence | Database/schema/RLS verification through SQL editor and application smoke checks. | Client/schema integration configured; settings and deployed state unverified |
-| Slack | Transport only | Broadcasts integration status and carries signed DevOps commands. | Endpoint/channel configured; settings and integration state unverified |
+| Local validation | Universal mandatory gate | Every production proposal | Commit SHA plus command result summary in the pull request |
+| CircleCI | Universal mandatory gate | Every production proposal | Terminal CircleCI check and workflow URL for the exact SHA |
+| Vercel preview | Conditional mandatory gate | UI, routing, runtime, deployment, or environment-sensitive changes | Commit-specific deployment URL and terminal Vercel result |
+| Supabase | Conditional mandatory gate | Migration, schema, generated-type, Auth, RLS, Storage, database-function, or Edge Function changes | Migration/test/advisor output and terminal provider result when available |
+| CodeQL | Conditional security gate | Supported source-code changes once the emitted check is stable | Terminal GitHub CodeQL result |
+| Dependency review | Conditional supply-chain gate | Manifest or lockfile changes once installed and stable | Terminal GitHub dependency-review result |
+| Dependabot | Maintenance automation | Supported dependency ecosystems | Alerts and update pull requests; not a gate by itself |
+| CodeRabbit | Advisory | Optional | Review comments only |
+| Meticulous | Advisory | Optional | Visual/session observations only |
+| Slack | Transport only | Notifications and authenticated command requests | Links to the originating provider; Slack is not the evidence store |
+| Jira | Development ledger | Decisions, work, and evidence links | Tracking record only; Jira is not a technical merge gate |
+
+CodeRabbit and Meticulous must never be configured as required checks.
+
+## Single-Attempt State Model
+
+```text
+READY
+  -> RUNNING(stage 1)
+  -> PASS -> RUNNING(next stage)
+  -> PASS -> ... -> COMPLETE
+
+RUNNING(any stage)
+  -> FAIL -> STOPPED
+```
+
+Rules:
+
+- One automatic workflow attempt per commit and trigger.
+- One execution per validation stage.
+- Pass advances to the next stage.
+- Failure terminates the current validation sequence.
+- No downstream validation after the first failure.
+- No automatic retry, retry loop, continuous retest, or failure-masking rerun.
+- Failure notification and cleanup are allowed after termination.
+- A new attempt requires a new commit or an explicit manual maintainer action.
+
+## Canonical Application Sequence
+
+CircleCI is the canonical clean-environment application validator and runs:
+
+1. `npm ci`
+2. tests
+3. lint
+4. typecheck
+5. production build
+6. dependency audit
+
+The existing CircleCI job is sequential and therefore stops at the first
+failed validation command. Its final `on_fail` Slack step is notification only;
+it does not continue testing or retry the failed stage.
+
+GitHub Actions application validation remains manual and supporting unless the
+repository owner later makes it the canonical validator. CodeQL and targeted
+security workflows may run independently because they validate different risk
+surfaces, not because they repeat CircleCI.
+
+## Supabase Verification
+
+When Supabase-relevant files change, verify as applicable:
+
+- migrations rebuild a clean local database;
+- database and pgTAP tests pass;
+- generated types have no unexplained drift;
+- RLS covers anonymous, authenticated, ownership, and negative-access cases;
+- database advisors report no unaccepted security findings;
+- production migrations are version-controlled and deployed through CI.
+
+A Supabase result may be `skipped` for a change that does not touch the
+Supabase surface. A skipped result is not a waiver because the gate was not
+applicable.
 
 ## Slack Broadcast Channel
 
 - Channel: `#proj-bible-study-buddy`
 - Channel ID: `C0B96SV684S`
-- Purpose: integration status, deployment state, build verification, dependency audit status, preview readiness, Supabase schema/RLS notes, CodeRabbit review status, and Meticulous/Vercel preview notes.
+- Purpose: compact notification of terminal validation, preview, security, and
+  deployment results.
+
+Slack messages should link to GitHub, CircleCI, Vercel, or Supabase rather than
+copying provider output as if Slack were the source.
 
 ## Slack Command Endpoint
 
 - Endpoint: `/api/devops/slack`
-- Request source: Slack slash command or Slack interactivity request.
 - Authentication: Slack request signing with `SLACK_SIGNING_SECRET`.
-- Authorization: `SLACK_ALLOWED_CHANNEL_ID` and optional comma-separated `SLACK_ALLOWED_USER_IDS`.
-
-Supported commands:
-
-| Command | Action |
-| --- | --- |
-| `status` | Returns the current verification source map. |
-| `validate` | Triggers CircleCI validation for `dev-test`. |
-| `deploy-preview` | Calls the configured Vercel preview deploy hook. |
-| `promote-production confirm` | Calls the configured Vercel production deploy hook. The `confirm` argument is mandatory. |
-| `help` | Shows the command list. |
-
-Required server-side environment variables:
-
-| Variable | Purpose |
-| --- | --- |
-| `SLACK_SIGNING_SECRET` | Verifies Slack request signatures. |
-| `SLACK_ALLOWED_CHANNEL_ID` | Restricts commands to the project channel. |
-| `SLACK_ALLOWED_USER_IDS` | Optional comma-separated user allowlist. |
-| `SLACK_BROADCAST_WEBHOOK_URL` | Sends status broadcasts back to Slack. |
-| `CIRCLECI_API_TOKEN` | Allows the `validate` command to trigger CircleCI. |
-| `CIRCLECI_PROJECT_SLUG` | CircleCI project slug, for example `gh/JMG3000/bible-study-buddy`. |
-| `VERCEL_PREVIEW_DEPLOY_HOOK_URL` | Allows the `deploy-preview` command to trigger Vercel. |
-| `VERCEL_PRODUCTION_DEPLOY_HOOK_URL` | Allows the confirmed production promotion command to trigger Vercel. |
+- Authorization: `SLACK_ALLOWED_CHANNEL_ID` and optional
+  `SLACK_ALLOWED_USER_IDS`.
+- A Slack command may request an action but cannot bypass pull-request,
+  validation, signature, channel, user, or production-confirmation controls.
 
 ## Broadcast Format
 
-Use this compact format for status updates:
-
 ```md
-**Bible Study Buddy integration status**
+**Bible Study Buddy validation status**
 - Branch: `dev-test`
 - Commit: `<sha>`
-- CircleCI: `<status>`
-- CodeRabbit: `<status>`
-- Vercel preview: `<status/url>`
-- Supabase: `<status>`
-- Meticulous via Vercel: `<status>`
-- Blockers: `<none/list>`
-- Next action: `<action>`
+- CircleCI: `<terminal status/workflow URL>`
+- CodeQL: `<terminal status or not applicable>`
+- Vercel preview: `<terminal status/commit URL or not applicable>`
+- Supabase: `<terminal status or not applicable>`
+- Advisory review: `<optional links>`
+- Result: `<complete/stopped at stage>`
+- Next action: `<new commit/manual decision>`
 ```
 
-## Current Policy
+Broadcast once at the terminal result. Do not post a message that triggers an
+automatic rerun.
 
-- Provider-gate policy is unresolved. Do not infer that provider unavailability
-  narrows the required gate set; maintainers must choose between the older broad
-  provider contract and the newer local-plus-Vercel-plus-Meticulous
-  classification.
-- Merge and production promotion remain blocked pending that decision and
-  satisfaction or explicit waiver of the selected gates.
-- CodeQL is disabled and is not a verification source.
-- GitHub Actions automatic triggers remain disabled in source. The gate workflow
-  is also manually disabled in live GitHub state; the Security Review workflow
-  is active but remains manual-dispatch only in source.
-- GitHub branch-protection queries found no protection for `main` at `082c731`
-  or `dev-test` at `485e3fb`.
-- CircleCI cannot supply supporting validation while its remote status reports
-  `Unable to parse YAML`. The source repair passes local YAML and shell checks;
-  record provider validation only after the repaired commit reaches `dev-test`
-  or `main`, or maintainers explicitly authorize and configure a manual path
-  that changes or bypasses the filters. A feature-branch push or rerun of an
-  earlier eligible-branch commit cannot validate the repaired configuration.
-- Fresh local validation at the promotion SHA remains required. From the
-  repository root, use `npm --prefix web test`, `npm --prefix web run lint`,
-  `npm --prefix web run typecheck`, `npm --prefix web run build`, and
-  `npm --prefix web audit --audit-level=moderate`; use `npm --prefix web ci`
-  when a clean dependency install is required.
-- Vercel preview plus Meticulous recorder review replaces the prior CI-tunnel Meticulous gate.
-- Under the newer, unratified classification, GitHub Actions and CircleCI add
-  supporting evidence when available. The older broad policy treats CircleCI
-  as a gate to pass or explicitly waive.
-- Slack may trigger validation and deploy hooks, but it is transport only and
-  does not bypass signature verification, channel restrictions, user allowlists,
-  or the `confirm` requirement for production.
+## Branch-Protection Readiness
+
+Before adding or changing required checks:
+
+1. Inspect the current workflow definitions.
+2. Observe the exact check names and GitHub App sources on a fresh commit.
+3. Confirm one attempt and one terminal result per expected check.
+4. Confirm non-applicable conditional checks terminate as `skipped`, `neutral`,
+   or `success` rather than remaining pending.
+5. Add only the stable signals to branch protection.
+
+The policy decision is resolved. Production promotion remains separate and
+requires the live applicable gates to pass for the exact proposed commit.
