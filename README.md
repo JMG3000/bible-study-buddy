@@ -1,22 +1,13 @@
 # Bible Study Buddy: Free
-Main:
-[![Dependabot Updates](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates)
 
-Dev-Test:
-[![Dependabot Updates](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates/badge.svg?branch=dev-test)](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates)
-
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/JMG3000/bible-study-buddy?utm_source=oss&utm_medium=github&utm_campaign=JMG3000%2Fbible-study-buddy&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+<h2 align="center">Branch Statuses</h2>
 
 
-
- _______________________________
-< BOFH: Bunny of Friendly Help. >
- -------------------------------
-  \
-   \   \
-        \ /\
-        ( )
-      .( o ).
+| main | dev-test |
+|:---:|:---:|
+| [![Dependabot Updates](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates) | [![Dependabot Updates](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates/badge.svg?branch=dev-test)](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates) |
+| [![CircleCI](https://dl.circleci.com/status-badge/img/gh/JMG3000/bible-study-buddy/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/JMG3000/bible-study-buddy/tree/main) | [![CircleCI](https://dl.circleci.com/status-badge/img/gh/JMG3000/bible-study-buddy/tree/dev-test.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/JMG3000/bible-study-buddy/tree/dev-test) |
+| ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/JMG3000/bible-study-buddy?utm_source=oss&utm_medium=github&utm_campaign=JMG3000%2Fbible-study-buddy&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews) | CodeRabbit Only checks production |
 
 Bible Study Buddy: Free is a Next.js app for creating, publishing, browsing,
 saving, reporting, printing, and organizing Bible study lesson plans.
