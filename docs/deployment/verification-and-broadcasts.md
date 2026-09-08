@@ -97,8 +97,9 @@ copying provider output as if Slack were the source.
 - Authentication: Slack request signing with `SLACK_SIGNING_SECRET`.
 - Authorization: `SLACK_ALLOWED_CHANNEL_ID` and optional
   `SLACK_ALLOWED_USER_IDS`.
-- A Slack command may request an action but cannot bypass pull-request,
-  validation, signature, channel, user, or production-confirmation controls.
+- Slack may request validation or a preview deployment, but it cannot request,
+  authorize, or trigger production deployment. Production promotion remains a
+  pull-request decision backed by the exact candidate's required evidence.
 
 ## Broadcast Format
 
