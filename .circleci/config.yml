@@ -95,3 +95,4 @@ workflows:
                 - dev-test
                 - main
                 - /^dependabot\/.*/
+                - /^codex\/bsbuddy-.*/
