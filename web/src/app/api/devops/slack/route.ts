@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     return slackResponse("This Slack channel or user is not allowed.", 403);
   }
 
-  const { command, args } = parseDevopsCommand(text);
+  const { command } = parseDevopsCommand(text);
 
   if (command === "status") {
     return slackResponse(buildDevopsStatusMessage());
