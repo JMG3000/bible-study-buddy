@@ -1,6 +1,6 @@
 # Meticulous Through Vercel
 
-Last reviewed: 2026-06-15.
+Last reviewed: 2026-07-14.
 
 ## Active Setup
 
@@ -30,7 +30,14 @@ Do not put `METICULOUS_API_TOKEN` in browser-exposed variables. It is only neede
 3. Open and exercise the preview so Meticulous can record sessions.
 4. Review Meticulous results in the Meticulous project dashboard.
 5. Broadcast the preview/Meticulous status to `#proj-bible-study-buddy`.
-6. Promote to `main` only after local validation, CircleCI, CodeRabbit, Vercel, Supabase, and Meticulous preview review pass or are explicitly waived.
+6. The older broad promotion policy requires local validation, CircleCI,
+   CodeRabbit, Vercel, Supabase, and Meticulous preview review to pass or be
+   explicitly waived. A newer classification instead treats local validation,
+   Vercel preview, and Meticulous review as mandatory and the other providers as
+   supporting evidence.
+7. This provider-policy disagreement is an unresolved governance decision; do
+   not merge or promote to production until maintainers select the governing
+   policy and its gates pass or are explicitly waived.
 
 ## Deterministic Rendering
 
