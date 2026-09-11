@@ -6,7 +6,7 @@ import {
   parseDevopsCommand,
   postDevopsBroadcast,
   triggerCircleCiValidation,
-  triggerVercelDeployHook,
+  triggerVercelPreviewDeployHook,
   verifySlackSignature,
 } from "@/lib/devops";
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     return slackResponse("This Slack channel or user is not allowed.", 403);
   }
 
-  const { command, args } = parseDevopsCommand(text);
+  const { command } = parseDevopsCommand(text);
 
   if (command === "status") {
     return slackResponse(buildDevopsStatusMessage());
@@ -57,28 +57,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (command === "deploy-preview") {
-    const result = await triggerVercelDeployHook({ production: false });
+    const result = await triggerVercelPreviewDeployHook();
     const message = result.ok ? result.message : `Preview deploy request failed: ${result.message}`;
     await postDevopsBroadcast(
       `Bible Study Buddy Slack DevOps command: \`deploy-preview\` by <@${userId}>. ${message}`,
-    );
-    return slackResponse(message, result.ok ? 200 : 500);
-  }
-
-  if (command === "promote-production") {
-    if (args[0] !== "confirm") {
-      return slackResponse(
-        "Production promotion requires `promote-production confirm`.",
-        400,
-      );
-    }
-
-    const result = await triggerVercelDeployHook({ production: true });
-    const message = result.ok
-      ? result.message
-      : `Production promotion request failed: ${result.message}`;
-    await postDevopsBroadcast(
-      `Bible Study Buddy Slack DevOps command: \`promote-production confirm\` by <@${userId}>. ${message}`,
     );
     return slackResponse(message, result.ok ? 200 : 500);
   }

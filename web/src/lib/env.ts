@@ -31,7 +31,6 @@ export const env = {
   circleciApiToken: process.env.CIRCLECI_API_TOKEN,
   circleciProjectSlug: process.env.CIRCLECI_PROJECT_SLUG,
   vercelPreviewDeployHookUrl: process.env.VERCEL_PREVIEW_DEPLOY_HOOK_URL,
-  vercelProductionDeployHookUrl: process.env.VERCEL_PRODUCTION_DEPLOY_HOOK_URL,
 };
 
 export function isSupabaseConfigured() {
