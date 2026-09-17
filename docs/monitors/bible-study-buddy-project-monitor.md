@@ -18,17 +18,18 @@ executing a release-affecting change.
 
 - Repository: `JMG3000/bible-study-buddy`
 - `main`: `0c58d03015a6c9909f8cc1e1f6f5ff2a5bd50318`
-- `dev-test`: `15e239f328bd52ce0645bdb0ff32069fffaa2510`
-- Merge base: `73d428d696f1cbe7383711d7493306e5228e3c1c`
-- Divergence: `dev-test` is 36 commits ahead and 1 commit behind `main`.
+- `dev-test`: **read the live GitHub branch head before every executable directive**. This monitor is committed on `dev-test`, so hard-coding its own branch-head SHA would become stale as soon as the monitor update lands.
+- Release-line baseline before the documentation reconciliation: `faa4ac99ddd8d32a5a091b76cc060885a3b780e4`.
+- Merge base with `main`: `73d428d696f1cbe7383711d7493306e5228e3c1c`.
+- Last verified relationship: `dev-test` remained 1 commit behind `main`; its ahead count increases as documentation-only reconciliation commits are added.
 - The `main`-only change is the README update represented by `0c58d030...`.
 
-Do not describe the branches as synchronized.
+Do not describe the branches as synchronized, and do not use this file as a substitute for live branch-head readback.
 
 ## PR #36 — production promotion
 
 - State: open, unmerged.
-- Head: `dev-test` at `15e239f3...`.
+- Head branch: `dev-test`; resolve its live SHA from GitHub before any promotion decision.
 - Base branch: `main`.
 - GitHub reports the PR as mechanically mergeable.
 - The PR body contains stale synchronization evidence, including an older head
@@ -40,9 +41,9 @@ PR #36 remains the deliberate `dev-test -> main` promotion vehicle, but it is
 ## PR #59 — BSBUDDY-6 authority removal
 
 - State: open, unmerged. GitHub currently reports `mergeable: false`.
-- Original base snapshot: `faa4ac99...`; current `dev-test` is `15e239f3...`.
+- Original base snapshot: `faa4ac99...`.
 - Head: `c8d4430b2e777ddea658cbf3db459d5f958aefe1`.
-- Relative to current `dev-test`, the PR branch is 1 commit ahead and 1 commit behind, with merge base `faa4ac99...`.
+- Documentation-only successor commits have advanced `dev-test` beyond the PR base; compare the live branch and PR head before integration rather than relying on a hard-coded ahead/behind count here.
 - Scope: nine files; removes Slack production-deploy authority and obsolete
   GitHub Actions production-promotion code while preserving validation/preview
   paths.
@@ -140,7 +141,7 @@ and read-back are verified.
 
 1. Dependency remediation is not durably present on GitHub and requires exact-artifact recovery/reconstruction plus fresh verification.
 2. PR #59 remains open/unmerged and its head still has a failing CircleCI dependency-audit gate.
-3. `dev-test` remains one commit behind `main` and is now 36 commits ahead; final branch reconciliation is incomplete.
+3. `dev-test` remained one commit behind `main` at the last verified comparison; its ahead count is volatile while documentation reconciliation commits land. Final branch reconciliation is incomplete.
 4. Supabase migration `0020` non-production validation is outstanding.
 5. `main` does not enforce the intended PR/status-check promotion contract.
 6. PR #36 promotion evidence is stale and must be refreshed only after the final candidate is known.
