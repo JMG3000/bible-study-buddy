@@ -1,5 +1,9 @@
 # GitHub Security And Promotion Workflows
 
+> **HISTORICAL / NON-EXECUTABLE RECORD**
+>
+> This dated audit is preserved as point-in-time evidence only. Do **not** treat its promotion workflow, branch-protection advice, provider state, dependency-audit result, or follow-up instructions as current project direction. Use `docs/deployment/branch-promotion-policy.md`, `docs/deployment/verification-and-broadcasts.md`, and the live GitHub rules/check state.
+
 Date: 2026-06-05
 
 ## Scope

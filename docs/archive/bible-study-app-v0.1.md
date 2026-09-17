@@ -1,5 +1,9 @@
 # Bible Study Lesson Plan App
 
+> **HISTORICAL / NON-EXECUTABLE RECORD**
+>
+> This archived product plan is preserved for evidence and history only. Do **not** use its architecture, delivery order, scope assumptions, routes, types, or implementation instructions as current project direction. Use `docs/monitors/bible-study-buddy-project-monitor.md` for current state and the live source tree for current implementation.
+
 ## Summary
 Build a greenfield responsive web app for a broad Christian audience to create, share, and browse pre-made Bible study lesson plans. The first release should prioritize:
 - Public discovery with anonymous browsing and SEO-friendly lesson pages

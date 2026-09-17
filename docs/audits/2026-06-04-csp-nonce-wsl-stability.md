@@ -1,5 +1,9 @@
 # CSP Nonce And WSL CLI Stability
 
+> **HISTORICAL / NON-EXECUTABLE RECORD**
+>
+> This dated audit is preserved as point-in-time evidence only. Do **not** treat its commands, validation results, WSL host state, provider state, or follow-up instructions as current project direction. Use `docs/monitors/bible-study-buddy-project-monitor.md` for current state.
+
 Date: 2026-06-04
 
 ## Scope

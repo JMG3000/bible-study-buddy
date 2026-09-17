@@ -1,5 +1,9 @@
 # 2026-06-04 Validation And Security Logging Summary
 
+> **HISTORICAL / NON-EXECUTABLE RECORD**
+>
+> This dated audit is preserved as point-in-time evidence only. Do **not** treat its pass/fail results, tool availability, secret-scan status, commands, or residual-risk statements as current project direction. Use fresh exact-SHA verification and `docs/monitors/bible-study-buddy-project-monitor.md` for current state.
+
 ## Purpose
 
 Create a repeatable validation record that separates private raw evidence from commit-safe summaries.

@@ -1,5 +1,9 @@
 # CodeRabbit Review Follow-Ups
 
+> **HISTORICAL / NON-EXECUTABLE RECORD**
+>
+> This dated audit is preserved as point-in-time evidence only. Do **not** treat its commands, validation results, provider state, follow-up instructions, or residual-risk statements as current project direction. Use `docs/monitors/bible-study-buddy-project-monitor.md` for current state and `docs/deployment/branch-promotion-policy.md` for current release policy.
+
 Date: 2026-06-04
 
 ## Scope

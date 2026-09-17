@@ -1,5 +1,9 @@
 # 2026-06-04 Provider And CSP Readiness
 
+> **HISTORICAL / NON-EXECUTABLE RECORD**
+>
+> This dated audit is preserved as point-in-time evidence only. Do **not** treat its provider/CSP status, residual risks, or follow-up instructions as current project direction. Use `docs/providers/third-party-provider-inventory.md` and `docs/monitors/bible-study-buddy-project-monitor.md` for current state.
+
 ## Purpose
 
 Document the current third-party provider surface and the CSP hardening path.

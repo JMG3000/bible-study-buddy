@@ -1,5 +1,9 @@
 # Analytics, Meticulous, And CircleCI Setup
 
+> **HISTORICAL / NON-EXECUTABLE RECORD**
+>
+> This dated audit is preserved as point-in-time evidence only. Do **not** treat its provider status, dependency-audit result, CI/Meticulous configuration, commands, or follow-up instructions as current project direction. Use the current provider inventory, verification policy, and project monitor.
+
 Date: 2026-06-05
 
 ## Scope

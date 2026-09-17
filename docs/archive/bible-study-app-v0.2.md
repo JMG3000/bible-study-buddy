@@ -1,5 +1,9 @@
 # Bible Study Lesson Plan App v1 Blueprint
 
+> **HISTORICAL / NON-EXECUTABLE RECORD**
+>
+> This archived product blueprint is preserved for evidence and history only. Do **not** use its architecture, delivery order, schema assumptions, routes, cache strategy, or implementation instructions as current project direction. Use `docs/monitors/bible-study-buddy-project-monitor.md` for current state and the live source tree for current implementation.
+
 ## Summary
 - Build a responsive `Next.js` web app for anonymous browsing and authenticated lesson-plan creation.
 - Use `Supabase` for Postgres, Auth, Storage, RLS, and Database Webhooks; deploy on `Vercel`.

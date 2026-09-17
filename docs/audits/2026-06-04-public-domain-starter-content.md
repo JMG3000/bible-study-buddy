@@ -1,5 +1,9 @@
 # 2026-06-04 Public-Domain Starter Content
 
+> **HISTORICAL / NON-EXECUTABLE RECORD**
+>
+> This dated audit is preserved as point-in-time evidence only. Do **not** treat its live Supabase count, migration state, or follow-up instructions as current project direction. Use the live source/provider state and `docs/monitors/bible-study-buddy-project-monitor.md` for current decisions.
+
 ## Purpose
 
 Seed original Bible Study Buddy starter content using public-domain-safe Scripture references and no copied commentary.
