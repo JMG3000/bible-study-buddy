@@ -1,143 +1,86 @@
-# Windows 11, NTFS, and WSL Filesystem Architecture
+# Windows 11, NTFS, and WSL Filesystem Guidance
 
-Last verified locally: 2026-07-13.
+Historical topology review: 2026-07-13.
+Current documentation boundary reviewed: 2026-09-15.
 
-## Supported Development Topology
+> This file is environment guidance, not a declaration of the project's current
+> canonical machine or checkout path. Earlier project work used a Windows/WSL
+> NTFS checkout and recovery copy. Those machine-specific locations are
+> historical and must not be used to infer current repository state.
 
-Bible Study Buddy uses one physical checkout on the Windows 11 `C:` NTFS
-volume. Windows and WSL use different path syntax to address the same files.
+## Supported principle
 
-| Role | Windows path | WSL path |
-| --- | --- | --- |
-| Canonical repository | `C:\Users\LattePanda\Documents\BSB-Windows` | `/mnt/c/Users/LattePanda/Documents/BSB-Windows` |
-| Next.js application | `C:\Users\LattePanda\Documents\BSB-Windows\web` | `/mnt/c/Users/LattePanda/Documents/BSB-Windows/web` |
-| Supabase migrations | `...\web\supabase\migrations` | `.../web/supabase/migrations` |
-| Project documentation | `...\docs` | `.../docs` |
-| Local environment | `...\web\.env.local` | `.../web/.env.local` |
-| Dependencies | `...\web\node_modules` | `.../web/node_modules` |
-| Next.js output | `...\web\.next` | `.../web/.next` |
-| Local operational logs | `...\logs\local` | `.../logs/local` |
+Use one physical checkout as the active working copy for a task, and use one
+compatible Node/npm execution environment for its generated dependency/build
+state.
 
-- The host filesystem is NTFS.
-- WSL exposes the `C:` volume through DrvFS/9P; Linux filesystem tools report
-  the transport as `9p`/`v9fs`, not as a native ext4 filesystem.
-- Use Windows paths in PowerShell and Windows applications.
-- Use `/mnt/c/...` paths in WSL Bash and Linux applications.
-- Run Node.js, npm, Git, and project validation from WSL for this checkout.
+- Use Windows paths with Windows-native tools.
+- Use `/mnt/<drive>/...` paths with WSL/Linux tools when working on Windows-mounted storage.
+- Do not run Windows Node.js and WSL Node.js against the same `node_modules` tree.
+- Recreate `node_modules` with `npm ci` after switching incompatible runtimes or lockfile states.
+- Rebuild `.next` after switching runtimes, branches, Node versions, or dependency-lock state.
 
-## Repository Architecture
+## Repository architecture
 
 | Location | Responsibility | Source of truth |
 | --- | --- | --- |
 | `.github/` | GitHub workflows, ownership, Dependabot | Yes |
 | `.circleci/` | CircleCI validation pipeline | Yes |
-| `docs/` | Architecture, deployment, provider, audit, and monitor records | Yes |
-| `scripts/` | Operator automation | Yes |
+| `docs/` | Architecture, deployment, provider, audit, and monitor records | Yes, subject to each document's authority boundary |
 | `web/src/` | Next.js application source | Yes |
 | `web/supabase/migrations/` | Ordered Supabase schema history | Yes |
 | `web/public/` | Static web assets | Yes |
 | `web/node_modules/` | Runtime-specific installed packages | No; generated |
-| `web/.next/` | Next.js build and development output | No; generated |
-| `web/.env.local` | Local secrets and endpoints | No; local-only |
-| `.vercel/` | Local Vercel project binding | No; generated/local |
-| `logs/local/` | Local validation and runtime output | No; operational |
+| `web/.next/` | Next.js build/development output | No; generated |
+| `web/.env.local` | Local secrets/endpoints | No; local-only |
+| `.vercel/` | Local Vercel binding | No; generated/local |
+| `logs/local/` | Local validation/runtime output | No; operational |
 
-## WSL Workflow
+## Generic local workflow
 
 ```bash
-cd /mnt/c/Users/LattePanda/Documents/BSB-Windows/web
+cd <repo-root>/web
 cp .env.example .env.local
 npm ci
 npm run dev
 ```
 
-- Expected application URL: `http://localhost:3000`.
-- Populate `.env.local` with local/provider values; never commit it.
-- Use `npm ci` to recreate the dependency tree from `package-lock.json`.
-
 Validation:
 
 ```bash
-cd /mnt/c/Users/LattePanda/Documents/BSB-Windows/web
+npm test
 npm run lint
 npm run typecheck
 npm run build
 npm audit --audit-level=moderate
 ```
 
-Filesystem and Git identity checks:
+Confirm repository identity before relying on a checkout:
 
 ```bash
-cd /mnt/c/Users/LattePanda/Documents/BSB-Windows
 pwd
-stat -f -c 'WSL transport: %T' .
 git status --short --branch
+git rev-parse HEAD
 git remote -v
 ```
 
-Expected path/transport: `/mnt/c/Users/LattePanda/Documents/BSB-Windows` and
-`v9fs`/`9p`. Expected development branch: `dev-test` or a short-lived branch
-based on `dev-test`. Expected GitHub remote:
+Expected remote repository:
 `https://github.com/JMG3000/bible-study-buddy.git`.
 
-## Pathological And Unsupported Locations
+## Windows/WSL-specific hazards
 
-### Duplicate Active Checkouts
-
-- `/mnt/d/repos/codex-projects/bible-study-buddy` was the local recovery source
-  used to reconstruct the NTFS target.
-- It is not the canonical checkout after this transition.
-- Do not edit both checkouts. Divergent unpushed work, generated files, and
-  provider configuration become indistinguishable.
-- Keep the old checkout read-only until the NTFS target passes validation and
-  any required history comparison is complete; decommission it separately.
-
-### Mixed Path Syntax
-
-- Do not pass `C:\...` paths to Linux commands in WSL.
-- Do not pass `/mnt/c/...` paths to Windows-only tools that do not understand
-  WSL paths.
-- Do not use `\\wsl$\...\mnt\c\...` as another canonical alias for a file that
-  Windows can address directly on `C:`.
-- Quote paths in scripts even though the current root has no spaces; parent or
-  future paths may contain them.
-
-### Mixed Runtime Output
-
-- Do not run Windows Node.js and WSL Node.js against the same
-  `web/node_modules` tree. Native packages and executable shims are
-  platform-specific.
-- Do not reuse `web/.next` after switching runtimes, branches, Node versions, or
-  package-lock state. Remove it and rebuild.
-- Do not copy `node_modules`, `.next`, `.vercel`, or `logs/local` between
-  checkouts. Recreate generated state from tracked configuration.
-
-### NTFS And DrvFS Edge Cases
-
-- Avoid files that differ only by letter case. Windows Git is configured with
-  case-insensitive path handling for this checkout.
-- Avoid relying on Linux ownership, mode bits, special files, or symlink
-  behavior in `/mnt/c`; DrvFS translates Windows metadata.
+- Do not mix Windows path syntax and WSL path syntax in tools that do not understand both.
+- Avoid duplicate simultaneously writable checkouts.
+- Avoid relying on Linux ownership/mode/symlink semantics on Windows-mounted NTFS.
 - Keep tooling caches and temporary files out of tracked directories.
-- Avoid moving the checkout under OneDrive-synchronized folders or deeply
-  nested paths; sync locks and Windows path-length limits can destabilize
-  installs and builds.
+- Avoid storing the active checkout in sync-managed folders when file locks or path translation destabilize builds.
 
-### Secrets And Operational Artifacts
+## Recovery boundary
 
-- Never commit `.env`, `.env.local`, service-role keys, OAuth secrets, Slack
-  secrets, deploy hooks, CI tokens, or OpenAI keys.
-- Never treat ignored local logs as status evidence after the session that
-  created them.
-- Record durable status in `docs/monitors/bible-study-buddy-project-monitor.md`.
+Historical recovery locations must not be deleted merely because they are no
+longer the active checkout. Current project evidence still does not establish
+independent off-host recovery durability. Destructive recovery cleanup therefore
+requires separate verification and authorization.
 
-## Recovery Rules
-
-1. Stop if both the canonical and legacy checkouts contain uncommitted changes.
-2. Compare `git status --short --branch`, `git remote -v`, and HEAD in each
-   checkout before copying or deleting anything.
-3. Preserve tracked source through Git; do not recover it from `.next`,
-   `node_modules`, logs, or editor caches.
-4. Recreate dependencies with WSL `npm ci` in the canonical `web/` directory.
-5. Run lint, typecheck, build, and audit before decommissioning a recovery
-   checkout.
+For current branch, PR, provider, and release state, use
+`docs/monitors/bible-study-buddy-project-monitor.md`.

@@ -1,5 +1,9 @@
 # Windows/WSL Filesystem Documentation Implementation Plan
 
+> **HISTORICAL / NON-EXECUTABLE RECORD**
+>
+> This document records a point-in-time implementation plan. It is preserved for evidence and history only. Do **not** use its machine paths, branch assumptions, provider status, validation results, or task instructions as current project direction. For current state use `docs/monitors/bible-study-buddy-project-monitor.md`; for current release policy use `docs/deployment/branch-promotion-policy.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use

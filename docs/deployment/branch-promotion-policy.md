@@ -1,8 +1,8 @@
 # Branch Promotion Policy
 
-Date adopted: 2026-06-05
-
-Hybrid gate contract ratified by the repository owner: 2026-09-02
+Date adopted: 2026-06-05  
+Hybrid gate contract ratified: 2026-09-02  
+Documentation state reviewed: 2026-09-15
 
 Use `docs/monitors/bible-study-buddy-project-monitor.md` for volatile branch,
 workflow, deployment, and provider observations. This document governs policy.
@@ -10,62 +10,42 @@ workflow, deployment, and provider observations. This document governs policy.
 ## Branches
 
 - `dev-test` is the development and integration branch.
-- `main` is the production branch and remains Vercel's production branch.
+- `main` is the production branch and remains the intended Vercel production branch.
 - Production promotion occurs through a deliberate pull request from `dev-test` to `main`.
-- No workflow may push directly to `main` as a substitute for the pull request.
+- No workflow, Slack command, deploy hook, or automation may substitute for the owner-controlled pull-request promotion decision.
 
-## Governing Gate Contract
+## Governing gate contract
 
-Every production proposal must satisfy the universal gates:
+Every production proposal must satisfy:
 
-1. Fresh local validation at the proposed commit.
-2. The canonical CircleCI validation workflow.
+1. Fresh local validation at the exact proposed commit.
+2. Canonical CircleCI validation for that exact commit.
 
-Additional gates apply only when the changed surface makes them relevant:
+Additional gates apply when the changed surface makes them relevant:
 
-- Vercel preview is required for UI, routing, runtime, deployment, or
-  environment-sensitive changes.
-- Supabase validation is required for migrations, schema, generated types,
-  Auth, RLS, Storage, database functions, or Edge Functions.
-- CodeQL is required for supported source-code changes once the emitted check
-  is active and stable.
-- GitHub dependency review is required for manifest or lockfile changes once
-  that workflow is installed and producing a stable check.
+- Vercel preview for UI, routing, runtime, deployment, or environment-sensitive changes.
+- Supabase validation for migrations, schema, generated types, Auth, RLS, Storage, database functions, or Edge Functions.
+- CodeQL for supported source-code changes only when the emitted check exists and is stable.
+- Dependency review for manifest/lockfile changes only when that check exists and is stable.
 
-Dependabot alerts, security updates, and version-update pull requests are
-maintenance automation. They are not themselves a per-pull-request gate.
+Dependabot is maintenance automation, not a release gate by itself.
+CodeRabbit and Meticulous are advisory and must not determine merge eligibility.
+Slack is transport only and is not approval, waiver, validation evidence, or merge authority.
+Jira is a ledger, not technical merge authority.
 
-CodeRabbit and Meticulous are advisory only. Their presence, absence, failure,
-plan limitation, or provider availability must not determine merge eligibility.
+## Single-attempt, fail-fast execution
 
-Slack is notification and command transport only. A Slack message is not an
-approval, waiver, validation result, or authoritative evidence record.
-
-## Single-Attempt, Fail-Fast Execution
-
-Validation is sequential and fail-fast:
+Canonical application validation is sequential:
 
 `install -> test -> lint -> typecheck -> build -> dependency audit`
 
-- Each automatic provider workflow runs at most once for a commit and trigger.
-- Each validation stage runs once.
-- A passing stage unlocks the next stage.
-- A failed stage ends that validation sequence.
-- Later validation stages do not run after the first failure.
-- Failure notification or cleanup may run, but it must not execute another test
-  or convert the failure into success.
-- Automatic retries, retry loops, blanket reruns, and continuous retesting are
-  prohibited.
-- A new attempt requires a new commit or an explicit maintainer-initiated
-  manual run. Provider-generated duplicate runs must not be treated as
-  additional evidence.
+- One automatic provider workflow attempt per commit and trigger.
+- One execution per validation stage.
+- Failure terminates that validation sequence.
+- No automatic retry loops or failure-masking reruns.
+- A new attempt requires a new commit or explicit maintainer action.
 
-CircleCI currently implements this behavior as one sequential job. GitHub
-Actions workflows must preserve the same semantics when enabled.
-
-## Local Validation
-
-From the repository root, use the repository-defined commands:
+## Local validation
 
 ```bash
 npm --prefix web ci
@@ -76,45 +56,34 @@ npm --prefix web run build
 npm --prefix web audit --audit-level=moderate
 ```
 
-Record the commit SHA and command result summary in the pull request. CircleCI
-must independently repeat the canonical validation in a clean environment.
+Record the exact commit SHA and command results. CircleCI must independently
+repeat the canonical sequence in its clean environment.
 
-## Promotion Flow
+## Promotion flow
 
-1. Push development work to `dev-test`.
-2. Run local validation at the proposed commit.
-3. Allow CircleCI to execute once, sequentially and fail-fast.
-4. Collect the applicable Vercel, Supabase, CodeQL, and dependency-review
-   evidence.
-5. Review the exact commit-specific evidence on the pull request.
-6. Merge through the protected `main` pull-request path only when the governing
-   gates pass.
-7. Allow Vercel production to deploy from `main`.
+1. Establish the exact `dev-test` candidate SHA.
+2. Reconcile any `main`-only divergence before declaring the final candidate.
+3. Run fresh local validation.
+4. Obtain canonical CircleCI evidence.
+5. Obtain all applicable provider evidence for that exact candidate.
+6. Confirm repository protection/rulesets enforce the intended promotion contract.
+7. Review the `dev-test -> main` pull request and explicitly authorize promotion.
+8. Merge only after every required gate passes or an authorized policy waiver is explicitly recorded.
+9. Allow production deployment from `main`.
 
-## Branch Protection
+## Branch protection requirements
 
-- Require only active, stable checks that are emitted for the protected path.
-- Select the expected GitHub App as the source when GitHub supports source
-  binding for the check.
-- A conditional check must return a terminal `success`, `neutral`, or `skipped`
-  result when it is not applicable; it must not remain pending.
-- Do not require CodeRabbit or Meticulous.
-- Do not make Slack, Jira, or a supervisor/aggregator service an approval gate.
-- Preserve non-fast-forward and branch-deletion protection.
-- Validate new required checks on `dev-test` before enforcing them on `main`.
+`main` must require the intended pull-request path and stable required checks
+before production promotion is authorized. Preserve non-fast-forward and branch
+deletion protection.
 
-## Security And Provider Boundaries
+Current enforcement status is volatile and belongs in the project monitor. A
+ruleset that only blocks deletion/non-fast-forward changes does **not** satisfy
+this policy by itself.
 
-- Store provider credentials in the provider's secret store, never in source.
-- Keep CircleCI contexts and GitHub permissions least-privileged.
-- Supabase production changes must use version-controlled migrations and
-  CI-controlled credentials; do not make ad hoc production schema changes.
-- Vercel preview evidence must correspond to the exact pull-request commit.
-- Jira records decisions and evidence links but is not the technical source of
-  truth and does not authorize a merge.
+## Current promotion boundary
 
-## Current Promotion Boundary
-
-Ratifying this policy does not authorize merging PR #36 or deploying
-production. Branch-protection changes must follow live workflow inspection and
-successful observation of the exact check names to be required.
+This policy does not authorize PR #36, PR #59, or any production deployment.
+The current monitor records that `main` does not yet enforce the full required
+PR/status-check contract, so production promotion remains blocked until that
+control is implemented and verified.

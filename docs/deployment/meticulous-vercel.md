@@ -1,57 +1,48 @@
 # Meticulous Through Vercel
 
-Last reviewed: 2026-07-14.
+Integration documentation reviewed: 2026-09-15.
 
-## Active Setup
+## Policy status
 
-Meticulous is connected through Vercel preview deployments, not through an active GitHub Actions visual-test gate.
+Meticulous is **advisory only** under the ratified branch-promotion policy. Its
+presence, absence, provider availability, or failure must not determine merge
+eligibility.
 
-The application loads the Meticulous recorder script from the App Router root layout when any of these are true:
+The previous documentation describing a disagreement between competing
+mandatory-provider policies is superseded.
 
-- `NODE_ENV=development`
-- `VERCEL_ENV=preview`
-- `NEXT_PUBLIC_ENABLE_METICULOUS_RECORDER=true`
+## Source integration
 
-The recorder uses `NEXT_PUBLIC_METICULOUS_PROJECT_ID` through `web/src/lib/env.ts`.
+The application can load the Meticulous recorder in development/preview contexts
+when configured. `NEXT_PUBLIC_METICULOUS_PROJECT_ID` is browser-visible by
+design; `METICULOUS_API_TOKEN` must not be exposed to browser code.
 
-## Vercel Environment Variables
+Recommended Vercel variables:
 
-Configure these in Vercel project settings:
+- `NEXT_PUBLIC_METICULOUS_PROJECT_ID` — Preview when recorder use is desired.
+- `NEXT_PUBLIC_ENABLE_METICULOUS_RECORDER` — normally unset/false; enable only for explicit recorder testing outside normal preview behavior.
 
-- `NEXT_PUBLIC_METICULOUS_PROJECT_ID`: set for Preview. Set for Development if local Vercel dev needs it. Do not set for Production unless production recording is intentionally approved.
-- `NEXT_PUBLIC_ENABLE_METICULOUS_RECORDER`: normally unset or `false`; set to `true` only for explicit recorder testing outside preview.
+Do not configure production recording unless explicitly approved.
 
-Do not put `METICULOUS_API_TOKEN` in browser-exposed variables. It is only needed for CI/API-driven Meticulous runs, which are currently inactive for this project.
+## Current provider observation
 
-## Preview Review Flow
+For PR #59 at `c8d4430b2e777ddea658cbf3db459d5f958aefe1`, the Meticulous bot reported
+that no test run was triggered because the Meticulous project is deactivated.
+That is an advisory-provider state, not a release-gate failure.
 
-1. Push work to `dev-test`.
-2. Verify the Vercel preview deployment for the branch.
-3. Open and exercise the preview so Meticulous can record sessions.
-4. Review Meticulous results in the Meticulous project dashboard.
-5. Broadcast the preview/Meticulous status to `#proj-bible-study-buddy`.
-6. The older broad promotion policy requires local validation, CircleCI,
-   CodeRabbit, Vercel, Supabase, and Meticulous preview review to pass or be
-   explicitly waived. A newer classification instead treats local validation,
-   Vercel preview, and Meticulous review as mandatory and the other providers as
-   supporting evidence.
-7. This provider-policy disagreement is an unresolved governance decision; do
-   not merge or promote to production until maintainers select the governing
-   policy and its gates pass or are explicitly waived.
+Do not reactivate Meticulous solely to satisfy promotion policy; reactivation is
+a separate product/tooling decision.
 
-## Deterministic Rendering
+## Deterministic rendering
 
-The app supports Meticulous deterministic rendering headers:
+The app supports Meticulous deterministic rendering headers through the source
+integration. Verify the current implementation before relying on any specific
+header behavior in a new test campaign.
 
-- `meticulous-is-test: 1`
-- `meticulous-simulated-date`
+## Related verification
 
-These are handled in `web/src/lib/meticulous.ts`.
+See:
 
-## Deferred CI Mode
-
-The prior GitHub Actions/CircleCI tunnel-style Meticulous jobs are not the active source of truth while GitHub Actions minutes are exhausted. If CI-driven visual testing is restored later, prefer a dedicated workflow and keep Vercel preview recording documented here as the normal manual review path.
-
-## Related Verification
-
-See `docs/deployment/verification-and-broadcasts.md` for the full verification source list and Slack broadcast channel.
+- `docs/deployment/branch-promotion-policy.md`
+- `docs/deployment/verification-and-broadcasts.md`
+- `docs/monitors/bible-study-buddy-project-monitor.md`

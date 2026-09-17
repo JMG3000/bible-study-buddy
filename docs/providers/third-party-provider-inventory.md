@@ -1,33 +1,32 @@
 # Third-Party Provider Inventory
 
-Last source and limited live-status review: 2026-07-14.
+Source/live-state review: 2026-09-15.
 
-Live queries were limited to GitHub repository/workflow state,
-GitHub/CircleCI commit status surfaces, and Vercel commit/deployment status.
-Provider configuration/settings remain unverified unless explicitly stated.
-Use `docs/monitors/bible-study-buddy-project-monitor.md` as the authority for
-volatile branch, workflow, deployment, and provider-status observations.
+This file records provider roles and the latest evidence available at the review
+snapshot. Reverify live state before release-affecting action. Use
+`docs/monitors/bible-study-buddy-project-monitor.md` for the complete current
+release boundary.
 
-| Provider | Purpose | Runtime surface | Secret handling | Status |
+| Provider | Purpose | Runtime surface | Secret handling | Current evidence |
 | --- | --- | --- | --- | --- |
-| Supabase | Database, Auth, RLS-protected app data, revalidation webhooks. | Server and browser clients. | Publishable key may be public; service role and webhook secret are server-only. | Configured in source; settings and deployed state unverified |
-| Vercel | Hosting and deployment environment variables. | Deployment platform; deployment owners must set `NEXT_PUBLIC_SITE_URL` to each environment's canonical public origin. | Secrets stored in Vercel env vars. | Live `dev-test` deployment at `485e3fb` reported success; production configuration/settings unverified |
-| Meticulous | Preview visual testing through Vercel preview deployments and the App Router recorder script. | Browser recorder on local development and Vercel preview only. | `NEXT_PUBLIC_METICULOUS_PROJECT_ID` may be public; source documentation describes `METICULOUS_API_TOKEN` as CI/API-only and inactive in the documented path. | Preview recorder configured; settings and session state unverified |
-| CircleCI | Build verification for install, test, lint, typecheck, build, and dependency audit; triggerable from the Slack DevOps command endpoint. | CI runner and CircleCI API; branch filters allow only `dev-test` and `main`. | `CIRCLECI_API_TOKEN` is server-only; project secrets stay in CircleCI contexts/env vars. | At the 2026-07-14 pre-push snapshot, YAML was repaired and parsed locally while queried remote state still reported the pre-repair `Unable to parse YAML`; a feature-branch push cannot trigger this workflow |
-| GitHub Actions | Manual validation, promotion, and security review workflows. | GitHub workflow service. | Repository/environment secrets remain in GitHub. | `Dev Test Gate and Production Promotion` manually disabled; `Security Review` active but source is manual-dispatch only; other settings unverified |
-| CodeRabbit | Pull request and diff review. | GitHub PR review and local CLI when explicitly approved. | Review upload may include code diff; do not run on sensitive unapproved diffs. | Policy configured; settings and review state unverified |
-| Slack | Broadcast channel for integration connection status and DevOps metrics; signed DevOps command input. | `#proj-bible-study-buddy` channel and `/api/devops/slack`. | `SLACK_SIGNING_SECRET` and webhook URLs are server-only. Do not post secrets, raw env values, private tokens, or service-role keys. | Endpoint/channel configured; settings and integration state unverified |
-| Google OAuth | User sign-in. | Supabase Auth provider redirect flow. | OAuth client secret belongs in Supabase provider settings, not app code. | Supported in source; provider settings unverified |
-| GitHub OAuth | User sign-in. | Supabase Auth provider redirect flow. | OAuth client secret belongs in Supabase provider settings, not app code. | Supported in source; provider settings unverified |
-| OpenAI Moderation | Optional lesson content review before publishing. | Server-side fetch only. | `OPENAI_API_KEY` is server-only. | Optional |
-| BibleGateway | Scripture reference outbound links. | Public outbound links from scripture chips. | No app secret. | Configured in source; endpoint not queried |
-| Scripture tooltip script | Optional third-party UI enhancement. | Browser script loaded only when env mode is not `off`. | No secret should be placed in script URL. | Disabled by default |
-| Sentry | Optional runtime monitoring. | Not currently configured in source. | DSN can be public; auth tokens must remain server/CI-only. | Not configured |
+| Supabase | Database, Auth, RLS-protected app data, migrations, revalidation webhooks | Server/browser clients and provider platform | Publishable key may be public; service role/webhook secrets server-only | Source integration present. PR #59 Supabase Preview is skipped because per-PR preview branches are disabled. Migration `0020` non-production validation remains outstanding. |
+| Vercel | Hosting, preview/production deployments, environment variables | Deployment platform | Secrets in Vercel env vars | PR #59 preview for `c8d4430...` reported Ready/success. Production configuration is not established by that preview result. |
+| Meticulous | Optional preview visual/session testing | Browser recorder in configured development/preview contexts | Public project ID may be browser-visible; API token must remain CI/server-only | Advisory only. PR #59 bot report says project is deactivated and no test run occurred. |
+| CircleCI | Canonical automatic clean-environment application validation | GitHub App -> CircleCI workflow | API/context secrets server/CI-only | Current filters include `dev-test`, `main`, Dependabot branches, and `codex/bsbuddy-*`. PR #59 produced one failing `validate` execution; recovered differential diagnosis attributes failure to pre-existing dependency audit findings, not BSBUDDY-6. |
+| GitHub Actions | Supporting manual validation/security workflows | GitHub workflow service | Repository/environment secrets in GitHub | Current workflow definitions are manual-dispatch only. `dev-test-gate.yml` still contains an obsolete `promote-to-main` job that is unreachable under current triggers; PR #59 removes it. No PR-triggered workflow run was observed for `c8d4430...`. |
+| CodeRabbit | PR/diff review | GitHub PR review | Review service processes approved repository diff/context | Advisory only. Auto review on PR #59 was skipped because the base is not the default branch. |
+| Slack | Validation/preview command transport and status broadcasts | `/api/devops/slack` and configured workspace/channel | Signing secret, webhook URLs, tokens server-only | Current `dev-test` still contains `promote-production confirm` and a production deploy-hook path, which conflicts with ratified policy. PR #59 removes that authority. Do not treat the current production command as approved. |
+| Google OAuth | User sign-in | Supabase Auth provider flow | OAuth client secret in provider settings | Supported in source; live provider configuration not verified in this review. |
+| GitHub OAuth | User sign-in | Supabase Auth provider flow | OAuth client secret in provider settings | Supported in source; live provider configuration not verified in this review. |
+| OpenAI Moderation | Optional lesson content review | Server-side request | `OPENAI_API_KEY` server-only | Optional source integration; provider configuration not verified in this review. |
+| BibleGateway | Scripture-reference outbound links | Public browser links | No app secret | Source behavior only; endpoint not queried in this review. |
+| Scripture tooltip script | Optional UI enhancement | Browser script when enabled | No secret in script URL | Disabled by default unless explicitly configured. |
+| Sentry | Optional runtime monitoring | Not currently configured in tracked source | DSN may be public; auth tokens server/CI-only | Not configured in tracked source. |
 
-## Provider Rules
+## Provider rules
 
-- Do not add a new browser script provider until it is documented here.
-- Keep `NEXT_PUBLIC_SCRIPTURE_TOOLTIP_MODE=off` unless the provider URL is approved.
-- Do not expose service-role keys, webhook secrets, OAuth client secrets, OpenAI keys, or Sentry auth tokens through `NEXT_PUBLIC_*`.
-- Keep Meticulous production recording disabled unless it is intentionally approved.
-- Slack DevOps commands must remain signed, channel-restricted, and allowlisted for sensitive operations.
+- Do not expose service-role keys, webhook secrets, OAuth client secrets, OpenAI keys, CI tokens, or deploy hooks through `NEXT_PUBLIC_*`.
+- Keep Meticulous advisory; do not convert it into a required merge gate without a new policy decision.
+- Slack must not retain or regain independent production authority after BSBUDDY-6 integration.
+- A provider `skipped` result is not evidence that provider-specific behavior passed.
+- Provider status must be tied to an exact SHA when used in a release decision.

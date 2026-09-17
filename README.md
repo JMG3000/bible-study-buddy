@@ -1,77 +1,45 @@
 # Bible Study Buddy: Free
-Main:
-[![Dependabot Updates](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates)
 
-Dev-Test:
-[![Dependabot Updates](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates/badge.svg?branch=dev-test)](https://github.com/JMG3000/bible-study-buddy/actions/workflows/dependabot/dependabot-updates)
+Bible Study Buddy: Free is a Next.js application for creating, publishing,
+browsing, saving, reporting, printing, and organizing Bible study lesson plans.
 
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/JMG3000/bible-study-buddy?utm_source=oss&utm_medium=github&utm_campaign=JMG3000%2Fbible-study-buddy&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+## Repository structure
 
-
-
- _______________________________
-< BOFH: Bunny of Friendly Help. >
- -------------------------------
-  \
-   \   \
-        \ /\
-        ( )
-      .( o ).
-
-Bible Study Buddy: Free is a Next.js app for creating, publishing, browsing,
-saving, reporting, printing, and organizing Bible study lesson plans.
-
-The repository is intentionally small:
-
-- `web/` - the Next.js application.
-- `web/supabase/migrations/` - SQL migrations for the Supabase-backed schema.
-- `docs/archive/` - early product planning notes kept for reference.
+- `web/` — Next.js application.
+- `web/supabase/migrations/` — ordered Supabase schema migrations.
+- `docs/` — current architecture, deployment, provider, security, and project-state documentation.
+- `docs/audits/` — dated historical audit evidence. Do not use audit entries as current operational state.
+- `docs/archive/` — superseded product-planning material retained for historical reference.
+- `docs/superpowers/` — dated implementation plans/specifications. Treat them as historical unless a current document explicitly adopts them.
 
 ## Current capabilities
 
 - Public lesson catalog and published lesson detail pages.
 - OAuth-only creator accounts with profile handles.
-- Private creator dashboard for drafts, study series, saved lessons, layout
-  templates, and print logs.
+- Private creator dashboard for drafts, study series, saved lessons, layout templates, and print logs.
 - Layout template library for reusable lesson structures.
 - Private print-log snapshots for edited handouts.
-- Favorites, reporting, reviewer workflows, admin user tools, and Webmaster
-  Supreme-only recovery actions.
+- Favorites, reporting, reviewer workflows, admin user tools, and recovery actions.
 - Supabase RLS-first schema design.
 - Vercel-ready Next.js deployment.
 
-## Windows 11 + WSL development
+## Local development
 
-The canonical checkout is stored on the Windows `C:` NTFS volume and operated
-from WSL:
-
-- Windows: `C:\Users\<your-username>\Documents\<repo-root>`
-- WSL: `/mnt/c/Users/<your-username>/Documents/<repo-root>`
+Use one checkout and one Node/npm execution environment for a given dependency tree.
+Do not share `web/node_modules` or `web/.next` across incompatible runtimes.
 
 ```bash
-cd /mnt/c/Users/<your-username>/Documents/<repo-root>/web
+cd web
 npm ci
 cp .env.example .env.local
 npm run dev
 ```
 
-Then open `http://localhost:3000`.
+Open `http://localhost:3000`.
 
-Use WSL Node.js/npm consistently. Do not share `web/node_modules` or
-`web/.next` with Windows Node.js. See
-`docs/architecture/windows-wsl-filesystem.md` for the canonical path map,
-generated paths, and unsupported/pathological locations.
-
-## Docker development
-
-From the repository root:
-
-```bash
-docker compose up --build
-```
-
-The app runs at `http://localhost:3000`. Docker uses the `web/.env.local` file
-when it exists.
+The repository does not designate a machine-specific local filesystem path as project truth.
+Legacy Windows/WSL filesystem guidance is retained in
+`docs/architecture/windows-wsl-filesystem.md` only for environments that still use that topology.
 
 ## Environment
 
@@ -85,24 +53,20 @@ Required for Supabase-backed features:
 
 Required for deployed environments:
 
-- `NEXT_PUBLIC_SITE_URL` - the deployment's canonical public origin. It drives
-  OAuth callback URLs, metadata, lesson and series sharing URLs, `robots.txt`,
-  `sitemap.xml`, and whether application cookies use the secure flag.
+- `NEXT_PUBLIC_SITE_URL` — the deployment's canonical public origin.
 
-Optional:
-
-- `SUPABASE_WEBHOOK_SECRET`
-- `NEXT_PUBLIC_SCRIPTURE_TOOLTIP_MODE`
-- `NEXT_PUBLIC_SCRIPTURE_TOOLTIP_SCRIPT_URL`
+Optional integrations are documented in
+`docs/providers/third-party-provider-inventory.md`.
 
 ## Database setup
 
 Run SQL migrations from `web/supabase/migrations/` in ascending filename order.
-The current tracked migration set is `0001` through `0020`.
+The tracked migration set currently ends at
+`0020_add_lesson_remix_parent.sql`.
 
-Run enum-extending migrations by themselves before later migrations that depend
-on the new enum values. Never edit an already-applied migration; add a new
-ordered migration.
+Never edit an already-applied migration. Add a new ordered migration instead.
+Migration `0020` remains a release-sensitive change and requires provider-level
+validation before a production promotion that contains it.
 
 ## Quality checks
 
@@ -112,16 +76,27 @@ npm test
 npm run lint
 npm run typecheck
 npm run build
+npm audit --audit-level=moderate
 ```
+
+CircleCI is the canonical automatic clean-environment application validator.
+See `docs/deployment/verification-and-broadcasts.md`.
+
+## Current project truth
+
+Use `docs/monitors/bible-study-buddy-project-monitor.md` for volatile branch,
+PR, provider, and release-blocker state. Do not infer current state from dated
+audits, archived plans, old PR descriptions, or local-machine paths.
 
 ## Documentation index
 
 - App details: `web/README.md`
-- Windows/WSL filesystem architecture:
-  `docs/architecture/windows-wsl-filesystem.md`
 - Current project monitor: `docs/monitors/bible-study-buddy-project-monitor.md`
-- Branch promotion: `docs/deployment/branch-promotion-policy.md`
-- Verification and broadcasts:
-  `docs/deployment/verification-and-broadcasts.md`
+- Branch promotion policy: `docs/deployment/branch-promotion-policy.md`
+- Verification/evidence roles: `docs/deployment/verification-and-broadcasts.md`
 - Provider inventory: `docs/providers/third-party-provider-inventory.md`
-- Early planning archive: `docs/archive/`
+- Meticulous/Vercel integration: `docs/deployment/meticulous-vercel.md`
+- Security-test scope: `docs/security/local-pentest-readiness.md`
+- Legacy Windows/WSL guidance: `docs/architecture/windows-wsl-filesystem.md`
+- Historical audits: `docs/audits/`
+- Historical product archive: `docs/archive/`

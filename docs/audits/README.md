@@ -1,19 +1,34 @@
 # Audit Index
 
-Sanitized audit summaries live here and are safe to commit. Full raw logs belong under `logs/local/YYYY-MM-DD/*.local.md`, which is ignored by git.
+> **Historical evidence boundary:** Every entry in `docs/audits/` is a dated,
+> point-in-time record. Audit results, workflow descriptions, provider states,
+> dependency-audit outcomes, and production-authority paths in these files are
+> **not current operational instructions**. Use
+> `docs/monitors/bible-study-buddy-project-monitor.md` for current state and
+> `docs/deployment/branch-promotion-policy.md` for current release policy.
 
-| Date | Area | Summary | Result | Residual risk | Owner |
-| --- | --- | --- | --- | --- | --- |
-| 2026-06-04 | Validation and security logging | Established local/raw and tracked/sanitized audit lanes. | Ready for implementation verification. | Full Codex Security scan and DAST require staging scope and tooling. | Project maintainer |
-| 2026-06-04 | Secret exposure review | Prior scan found expected env variable names only, not tracked secret values. | No tracked hardcoded secret values identified. | Install Gitleaks for git-history verification. | Project maintainer |
-| 2026-06-04 | Provider stability | Current third-party surface documented before CSP hardening. | Inventory created. | Optional tooltip provider must remain disabled until approved. | Project maintainer |
-| 2026-06-04 | CSP readiness | Started with report-only CSP, then moved to nonce-enforced CSP after CodeRabbit follow-up. | Build passed. | Watch staging for provider compatibility. | Project maintainer |
-| 2026-06-04 | Public-domain starter content | Added 5 original lessons and 2 study series using Scripture references only. | Live Supabase verification passed. | Continue documenting any future source/license use. | Project maintainer |
-| 2026-06-04 | CodeRabbit review follow-ups | Fixed verified migration, Supabase function, React key, metadata, and CSP image-scope findings from the uncommitted web review. | Local lint, typecheck, build, audit, and diff checks passed. | Supabase MCP read-back still needs reauthentication. | Project maintainer |
-| 2026-06-04 | CSP nonce and WSL CLI stability | Moved CSP to per-request nonce generation and added a WSL-safe CodeRabbit wrapper with fixed terminal dimensions. | Local lint, typecheck, build, audit, and diff checks passed. | WSL service access still requires host/session repair if `wsl.exe` returns access denied. | Project maintainer |
-| 2026-06-05 | Analytics and visual testing | Added Vercel Analytics, Meticulous App Router recorder wiring, deterministic date helper, and CI Meticulous experiments. | Local lint, typecheck, build, and dependency audit passed. | Superseded on 2026-06-15: active Meticulous path is Vercel preview recorder capture, not CI tunnel jobs. | Project maintainer |
-| 2026-06-05 | GitHub security and promotion workflows | Added GitHub Actions for dev-test validation, security experiments, Dependabot, CODEOWNERS, and fast-forward promotion to production `main`. | Local diff check, lint, typecheck, build, and dependency audit passed. | Superseded on 2026-06-15: CodeQL, dependency review, and SARIF upload are inactive because required GitHub security features are disabled. | Project maintainer |
-| 2026-06-06 | Meticulous promotion gate and skill restore | Added an experimental Meticulous GitHub Actions gate, restored ignored project-local skills, and expanded local validation. | Local lint, typecheck, build, audit, diff, wiring, and skill-inventory checks passed. | Superseded on 2026-06-15: Meticulous CI gate removed; Vercel preview recorder capture is active. | Project maintainer |
-| 2026-06-15 | CodeQL disabled and Meticulous through Vercel | Removed CodeQL, SARIF/dependency-review, and Meticulous CI gates from active workflows; documented Vercel preview as the active Meticulous path. | Local lint, typecheck, build, audit, and diff checks passed. | Meticulous preview review depends on Vercel preview env vars and recorded sessions. CodeQL remains inactive until repository code scanning is enabled again. | Project maintainer |
-| 2026-06-15 | Verification sources and Slack broadcasts | Documented CircleCI, CodeRabbit, Vercel, Supabase, Meticulous, and Slack roles; selected `#proj-bible-study-buddy` for integration status broadcasts. | Slack draft created for review. | Slack channel broadcasts must avoid secrets and raw env values. | Project maintainer |
-| 2026-06-16 | Slack-controlled DevOps workflow | Added a signed Slack command endpoint, CircleCI Slack status broadcasts, deploy-hook commands, and expanded dependency overrides. | Local lint, typecheck, build, audit, diff, and secret-pattern checks passed. | Production deploy commands require signed Slack requests, the project channel, optional user allowlist, and explicit `confirm`. | Project maintainer |
+Sanitized audit summaries live here and are safe to commit. Full raw logs belong
+under `logs/local/YYYY-MM-DD/*.local.md`, which is ignored by Git.
+
+Historical records are intentionally preserved rather than rewritten to match
+later architecture. When a historical audit conflicts with current policy or
+source, the current monitor/policy wins for present-tense decisions.
+
+| Date | Area | Historical result / note |
+| --- | --- | --- |
+| 2026-06-04 | Validation and security logging | Established local/raw and tracked/sanitized audit lanes. |
+| 2026-06-04 | Secret exposure review | Point-in-time review found expected env variable names and no tracked hardcoded secret values. |
+| 2026-06-04 | Provider stability | Third-party surface documented before later provider/governance changes. |
+| 2026-06-04 | CSP readiness | CSP work progressed from report-only toward nonce-enforced behavior. |
+| 2026-06-04 | Public-domain starter content | Starter content and source/license evidence recorded. |
+| 2026-06-04 | CodeRabbit review follow-ups | Point-in-time code-review fixes and local validation recorded. |
+| 2026-06-04 | CSP nonce and WSL CLI stability | Historical WSL/CLI stability evidence. |
+| 2026-06-05 | Analytics and visual testing | Historical Meticulous CI experiments; later superseded by preview-recorder usage and later advisory-only policy. |
+| 2026-06-05 | GitHub security and promotion workflows | Historical GitHub Actions promotion/security design; current policy forbids automation from substituting for deliberate `dev-test -> main` PR promotion. |
+| 2026-06-06 | Meticulous promotion gate and skill restore | Historical experiment; Meticulous is now advisory only. |
+| 2026-06-15 | CodeQL disabled and Meticulous through Vercel | Historical provider configuration snapshot. |
+| 2026-06-15 | Verification sources and Slack broadcasts | Historical integration/broadcast design snapshot. |
+| 2026-06-16 | Slack-controlled DevOps workflow | Historical introduction of Slack production-deploy authority; that authority is now contrary to ratified policy and is targeted for removal by PR #59. |
+
+Do not promote, merge, change CI, or restore an old authority path based solely
+on an audit entry.

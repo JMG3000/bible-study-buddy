@@ -1,5 +1,9 @@
 # Windows 11, NTFS, and WSL Filesystem Design
 
+> **HISTORICAL / NON-EXECUTABLE RECORD**
+>
+> This document records a point-in-time design. It is preserved for evidence and history only. Do **not** use its machine paths, branch assumptions, provider status, validation results, or operating-model instructions as current project direction. For current state use `docs/monitors/bible-study-buddy-project-monitor.md`; for current release policy use `docs/deployment/branch-promotion-policy.md`.
+
 ## Goal
 
 Make `C:\Users\LattePanda\Documents\BSB-Windows` the canonical Windows 11
