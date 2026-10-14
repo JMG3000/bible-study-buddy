@@ -1,0 +1,13 @@
+{
+  "name": "@bsbuddy/next-eslint-glob",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bounded directory glob adapter for the pinned Next.js ESLint plugin",
+  "main": "index.mjs",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "peerDependencies": {
+    "tinyglobby": "0.2.17"
+  }
+}
