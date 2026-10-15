@@ -5,7 +5,10 @@ Source/live-state review: 2026-09-15.
 This file records provider roles and the latest evidence available at the review
 snapshot. Reverify live state before release-affecting action. Use
 `docs/monitors/bible-study-buddy-project-monitor.md` for the complete current
-release boundary.
+release boundary. The local BSBUDDY-6 repair candidate removes the obsolete
+GitHub promotion job and Slack production command/helper/environment setting;
+the upstream snapshot in the table does not imply those paths remain in this
+candidate. Remote integration and deployment must be verified separately.
 
 | Provider | Purpose | Runtime surface | Secret handling | Current evidence |
 | --- | --- | --- | --- | --- |

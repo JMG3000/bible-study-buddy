@@ -48,9 +48,10 @@ but its condition requires a push event while the workflow currently exposes
 only `workflow_dispatch`; therefore that job is unreachable under the current
 trigger definition.
 
-PR #59 removes that obsolete production-authority code path. Until PR #59 is
-integrated, documentation must describe it as **present but unreachable**, not
-as already removed.
+The local BSBUDDY-6 repair candidate removes that obsolete job and retains
+manual validation with read-only repository permissions. PR #59 remains the
+remote proposal; upstream integration must be verified separately. The
+2026-09-15 upstream snapshot above is not the local candidate's implementation.
 
 ## Slack command boundary
 
@@ -59,11 +60,16 @@ command and a production Vercel deploy-hook path. That implementation conflicts
 with the ratified policy that Slack is transport only and must not possess
 independent production authority.
 
-PR #59 removes that command/path. Until PR #59 is integrated:
+The local BSBUDDY-6 repair candidate removes that command, deploy-hook helper,
+and environment configuration. Signed-request verification, replay protection,
+channel/user restrictions, CircleCI validation, and preview requests remain.
+Regression tests verify that a signed production command cannot call a deploy
+hook even when a legacy production hook is configured. Until remote integration:
 
 - do not use the Slack production command as an authorized promotion mechanism;
 - do not document it as an approved release path;
-- treat its removal as pending implementation work, not completed state.
+- treat upstream removal as pending; local regression results do not establish
+  deployed behavior or release readiness.
 
 ## Supabase verification
 

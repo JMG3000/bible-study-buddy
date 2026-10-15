@@ -8,8 +8,7 @@ export type DevopsCommand =
   | "help"
   | "status"
   | "validate"
-  | "deploy-preview"
-  | "promote-production";
+  | "deploy-preview";
 
 export interface SlackDevopsRequest {
   channelId: string;
@@ -83,7 +82,6 @@ export function parseDevopsCommand(text: string): {
     "status",
     "validate",
     "deploy-preview",
-    "promote-production",
   ]);
 
   if (allowedCommands.has(normalizedCommand as DevopsCommand)) {
@@ -113,9 +111,6 @@ export function buildHelpMessage() {
     "`status` - show configured verification sources",
     "`validate` - trigger CircleCI validation for `dev-test`",
     "`deploy-preview` - call the configured Vercel preview deploy hook",
-    "`promote-production confirm` - call the configured Vercel production deploy hook",
-    "",
-    "Production promotion requires the exact `confirm` argument.",
   ].join("\n");
 }
 
@@ -158,21 +153,13 @@ export async function triggerCircleCiValidation() {
   };
 }
 
-export async function triggerVercelDeployHook({
-  production,
-}: {
-  production: boolean;
-}) {
-  const hookUrl = production
-    ? env.vercelProductionDeployHookUrl
-    : env.vercelPreviewDeployHookUrl;
+export async function triggerVercelPreviewDeployHook() {
+  const hookUrl = env.vercelPreviewDeployHookUrl;
 
   if (!hookUrl) {
     return {
       ok: false,
-      message: production
-        ? "Production deploy hook is not configured."
-        : "Preview deploy hook is not configured.",
+      message: "Preview deploy hook is not configured.",
     };
   }
 
@@ -187,9 +174,7 @@ export async function triggerVercelDeployHook({
 
   return {
     ok: true,
-    message: production
-      ? "Production deploy hook accepted."
-      : "Preview deploy hook accepted.",
+    message: "Preview deploy hook accepted.",
   };
 }
 
